@@ -288,6 +288,7 @@
 ```yaml
 episode: {{NUMBER}}
 title: "{{TITLE}}"
+summary: "{{SUMMARY}}"
 date: "{{DATE}}"
 pov: "{{POV_CHARACTER}}"
 location: "{{LOCATION}}"

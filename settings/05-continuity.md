@@ -11,6 +11,7 @@
 ```yaml
 episode: 1
 title: "에피소드 제목"
+summary: "에피소드 핵심 내용 1~2문장 요약"
 date: "2026-02-25"
 pov: "시점 캐릭터"
 location: "주요 장소"
