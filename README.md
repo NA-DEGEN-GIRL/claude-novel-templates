@@ -45,6 +45,7 @@ AI(Claude Code)로 웹소설을 쓰기 위한 프로젝트 템플릿.
 |----------|------|------|
 | **novel-calc** | 날짜 계산, 전통 단위 변환, 화폐 계산, 이동 시간 추정 등 | [mcp-novel-calc](https://github.com/NA-DEGEN-GIRL/mcp-novel-calc) |
 | **novel-hanja** | 한자어 검색, 검증, 작명 보조 | [mcp-novel-hanja](https://github.com/NA-DEGEN-GIRL/mcp-novel-hanja) |
+| **novelai-image** | 캐릭터/삽화/표지 이미지 자동 생성 (NovelAI API) | [mcp-novelai-image](https://github.com/NA-DEGEN-GIRL/mcp-novelai-image) |
 
 MCP 서버 없이도 템플릿 자체는 동작한다. 다만 AI가 수치와 한자를 자체 추론하게 되므로 정확도가 떨어질 수 있다.
 
@@ -270,6 +271,18 @@ AI가 수치를 암산하면 틀린다. MCP 서버로 정확한 계산을 보장
 | `hanja_search` | 한글 음으로 한자 검색 |
 | `hanja_meaning` | 의미 키워드로 한자 탐색 |
 | `hanja_verify` | 한자어 존재 여부 + 소설 내 중복 체크 |
+
+### novelai-image ([레포](https://github.com/NA-DEGEN-GIRL/mcp-novelai-image))
+
+NovelAI API로 캐릭터/삽화/표지를 자동 생성한다. `character-prompts.md`에서 캐릭터 태그를 자동 로드하여 외모 일관성을 보장한다.
+
+| 도구 | 용도 |
+|------|------|
+| `list_characters` | 캐릭터 목록 조회 |
+| `generate_character` | 캐릭터 초상화 생성 |
+| `generate_image` | 범용 이미지 생성 |
+| `generate_illustration` | 에피소드 삽화 생성 (다인물 좌표 배치) |
+| `generate_cover` | 소설 표지 생성 |
 
 ---
 
