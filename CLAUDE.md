@@ -14,6 +14,7 @@
 - **주요 키워드**: {{KEYWORDS}}
 - **타겟 독자**: {{TARGET_AUDIENCE}} (예: "20~30대 남성, 무협 매니아", "SF 마니아, 사색적 서사 선호")
 - **한줄 소개**: {{ONE_LINE_SUMMARY}}
+- **ollama_proofread**: false  <!-- true로 변경하면 한글 교정 후 Ollama 2차 교차 검증을 수행 (NIM 등 비-Claude 환경 권장) -->
 
 ### 1.1 작품의 핵심 약속
 
@@ -153,7 +154,7 @@
 
 > **순서 근거**: Gemini가 텍스트 수정을 제안하면 교정 대상이 바뀌므로, 한글 교정은 반드시 모든 텍스트 수정이 완료된 후 마지막에 수행한다.
 
-한글 교정 완료 후, **Ollama 2차 교차 검증**을 수행한다:
+소설 CLAUDE.md에 `ollama_proofread: true`가 설정된 경우, 한글 교정 완료 후 **Ollama 2차 교차 검증**을 추가로 수행한다. 이 옵션은 NIM 프록시 등 Claude 이외의 모델로 집필할 때 교정 정확도를 보완하기 위한 것이다.
 
 ```
 mcp__ollama-proofreader__proofread(file_path="에피소드 절대 경로")
@@ -161,8 +162,7 @@ mcp__ollama-proofreader__proofread(file_path="에피소드 절대 경로")
 
 - 결과는 `{소설폴더}/reviews/`에 자동 저장된다.
 - **로컬 모델은 정확도가 낮다. 맹목적으로 반영하지 않는다.**
-- **반영 기준**: Claude(1차 교정)가 **놓친 진짜 오류**만 반영한다. "이건 내가 놓쳤다"라고 확인된 것만 수정한다.
-- 문체 제안, 어색함 지적, 대사 교정 등 주관적 항목은 무시한다.
+- **반영 기준**: 1차 교정에서 **놓친 진짜 오류**만 반영한다. 문체 제안, 어색함 지적, 대사 교정 등 주관적 항목은 무시한다.
 
 ### 3.4 연속성 검증 (Continuity Check)
 
@@ -263,7 +263,7 @@ mcp__ollama-proofreader__proofread(file_path="에피소드 절대 경로")
 | P6 | running-context 갱신 | `running-context.md`가 200줄 이내인지, 최신 상태를 정확히 반영하는지 확인 |
 | P7 | Gemini 일괄 리뷰 | 직전 점검 이후 에피소드를 `gemini-feedback` 배치 모드(모드 B)로 일괄 리뷰. 텍스트 수정 제안을 반영한다 |
 | P8 | 한글 품질 일괄 점검 | P7 반영 후 `korean-proofreader` 기준으로 재검수. 불규칙 활용, 수사 혼용, 번역투, AI 습관 단어 등 누적 오류를 일괄 교정 |
-| P8.5 | Ollama 교차 검증 | P8 완료 후 `mcp__ollama-proofreader__proofread`로 2차 교차 검증. **Claude가 놓친 오류만 반영** — 로컬 모델의 주관적 지적(문체, 어색함)은 무시 |
+| P8.5 | Ollama 교차 검증 (선택) | `ollama_proofread: true`인 경우만. P8 완료 후 `mcp__ollama-proofreader__proofread`로 2차 교차 검증. **놓친 오류만 반영** — 로컬 모델의 주관적 지적은 무시 |
 | P9 | 메타 참조 금지 점검 | 본문(나레이션·대사·독백)에서 "X화에서", "지난 화", "앞으로 N화" 등 에피소드 번호로 과거/미래를 지칭하는 표현이 없는지 전수 검사. 발견 시 날짜·장소·사건명으로 대체 |
 
 #### 점검 후 조치
