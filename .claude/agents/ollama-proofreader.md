@@ -21,6 +21,7 @@
 
 - **엔진**: Ollama (로컬)
 - **모델**: `gpt-oss-safeguard:20b` (기본값. 다른 모델로 변경 가능)
+- **실행 경로**: `/usr/local/bin/ollama` (서브에이전트 환경에서 PATH 누락 방지를 위해 절대 경로 사용)
 - **필수 옵션**: `--hidethinking` (모델의 사고 과정 출력 억제)
 - **후처리**: `sed`로 마크다운 코드블록 기호 등 비JSON 잔해를 제거
 
@@ -53,7 +54,7 @@ BODY=$(sed '/^### EPISODE_META/,$d' "$EPISODE_FILE")
 아래 형식으로 Ollama를 호출한다. 시스템 프롬프트와 본문을 하나의 프롬프트로 결합한다.
 
 ```bash
-RESULT=$(ollama run gpt-oss-safeguard:20b --hidethinking "$(cat <<'PROMPT'
+RESULT=$(/usr/local/bin/ollama run gpt-oss-safeguard:20b --hidethinking "$(cat <<'PROMPT'
 [시스템 지침]
 너는 한국어 소설 원고의 교정 전문가다. 아래 원고에서 오탈자, 문법 오류, 어색한 표현, 띄어쓰기 오류를 찾아라.
 
@@ -226,7 +227,7 @@ JSON을 파싱하여 사용자에게 **마크다운 표**로 요약 보고한다
 
 ```bash
 # 모델 변경 예시
-ollama run qwen3-coder:30b --hidethinking "..."
+/usr/local/bin/ollama run qwen3-coder:30b --hidethinking "..."
 ```
 
 ---
@@ -262,4 +263,4 @@ ollama run qwen3-coder:30b --hidethinking "..."
 2. **JSON 깨짐**: 모델이 간혹 불완전한 JSON을 출력한다. 4단계의 파싱 복구 로직으로 대응하되, 반복 실패 시 모델을 변경하거나 프롬프트를 조정한다.
 3. **모델 편향**: 각 모델은 고유한 편향이 있다. Ollama 모델이 지적한 항목이 실제 오류인지 Claude가 최종 판단한다.
 4. **대사 오탐**: 캐릭터 대사 내부를 교정으로 잡는 오탐(false positive)이 빈번하다. `{{CHARACTER_SPEECH_PATTERNS}}`를 충분히 상세하게 제공하여 오탐을 줄인다.
-5. **Ollama 서버 상태**: 호출 전 `ollama list`로 모델이 로드 가능한지 확인한다. 모델이 없으면 `ollama pull gpt-oss-safeguard:20b`로 다운로드한다.
+5. **Ollama 서버 상태**: 호출 전 `/usr/local/bin/ollama list`로 모델이 로드 가능한지 확인한다. 모델이 없으면 `/usr/local/bin/ollama pull gpt-oss-safeguard:20b`로 다운로드한다.
