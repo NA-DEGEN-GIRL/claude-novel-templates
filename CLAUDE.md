@@ -14,7 +14,10 @@
 - **주요 키워드**: {{KEYWORDS}}
 - **타겟 독자**: {{TARGET_AUDIENCE}} (예: "20~30대 남성, 무협 매니아", "SF 마니아, 사색적 서사 선호")
 - **한줄 소개**: {{ONE_LINE_SUMMARY}}
-- **ollama_proofread**: false  <!-- true로 변경하면 한글 교정 후 Ollama 2차 교차 검증을 수행 (NIM 등 비-Claude 환경 권장) -->
+- **nim_feedback**: false  <!-- true로 변경하면 NIM 기반 편집 리뷰를 추가 수행 -->
+- **nim_feedback_model**: "mistralai/mistral-large-3-675b-instruct-2512"
+- **ollama_feedback**: false  <!-- true로 변경하면 로컬 Ollama 기반 편집 리뷰를 추가 수행 -->
+- **ollama_feedback_model**: "gpt-oss:120b"
 
 ### 1.1 작품의 핵심 약속
 
@@ -31,7 +34,9 @@
 ```
 {{NOVEL_ID}}/
 ├── CLAUDE.md              ← 현재 파일 (집필 헌법)
-├── EDITOR_FEEDBACK.md     ← 외부 에디터 피드백 (자동 생성, 수시 갱신)
+├── EDITOR_FEEDBACK_gemini.md  ← Gemini 편집 리뷰 (항상 생성)
+├── EDITOR_FEEDBACK_nim.md    ← NIM 편집 리뷰 (nim_feedback: true 시)
+├── EDITOR_FEEDBACK_ollama.md ← Ollama 편집 리뷰 (ollama_feedback: true 시)
 ├── settings/              ← 세계관, 캐릭터, 규칙 설정
 │   ├── 01-style-guide.md       ← 문체 가이드
 │   ├── 02-episode-structure.md ← 에피소드 구조
@@ -67,11 +72,10 @@
         ├── reviewer.md           ← 품질 검토 에이전트 (7항목 채점)
         ├── continuity-checker.md ← 연속성 검증 에이전트 (12항목)
         ├── korean-proofreader.md ← 한글 교정 에이전트 (8항목)
-        ├── ollama-proofreader.md ← Ollama 2차 교차 검증 에이전트 (로컬 LLM)
         ├── plot-planner.md       ← 플롯 설계 에이전트
         ├── summary-generator.md  ← 요약 생성 에이전트
         ├── summary-validator.md  ← 요약 검증 에이전트 (원문 대조)
-        ├── gemini-feedback.md   ← Gemini 피드백 에이전트 (외부 AI 편집자 연동)
+        ├── gemini-feedback.md   ← 다중 소스 피드백 에이전트 (NIM/Ollama/Gemini 오케스트레이터)
         └── illustration-manager.md ← 삽화 관리 에이전트 (검증/감사/재생성)
 ```
 
@@ -87,7 +91,7 @@
 2. **설정 파일 확인**: 변경된 설정이 있는지 `settings/` 폴더를 확인한다.
 3. **연속성 체크**: 현재 시점의 캐릭터 상태, 위치, 미해결 떡밥을 정리한다.
 4. **관계/정보 확인**: 등장 캐릭터들의 만남 이력(`relationship-log.md`), 정보 보유 현황(`knowledge-map.md`), 미이행 약속(`promise-tracker.md`)을 확인한다.
-5. **에디터 피드백 확인**: `EDITOR_FEEDBACK.md`가 존재하면, `summaries/editor-feedback-log.md`와 대조하여 **미처리 피드백**이 있는지 확인한다. 미처리 항목 중 이번 화에 반영할 수 있는 합리적 제안이 있으면 집필 시 참고한다. 비합리적이거나 설정과 충돌하는 제안은 건너뛴다. 확인 결과를 `editor-feedback-log.md`에 기록한다.
+5. **에디터 피드백 확인**: `EDITOR_FEEDBACK_gemini.md` (및 `_nim.md`, `_ollama.md`)가 존재하면, `summaries/editor-feedback-log.md`와 대조하여 **미처리 피드백**이 있는지 확인한다. 미처리 항목 중 이번 화에 반영할 수 있는 합리적 제안이 있으면 집필 시 참고한다. 비합리적이거나 설정과 충돌하는 제안은 건너뛴다. 확인 결과를 `editor-feedback-log.md`에 기록한다.
 
 ### 3.2 집필 (Write)
 
@@ -147,22 +151,20 @@
 
 → 하나라도 기준 미달이면 수정 후 재검토.
 
-자체 검토와 동시에 `.claude/agents/gemini-feedback.md` 에이전트를 호출하여 **Gemini 편집 리뷰를 병렬로 수행**한다.
+자체 검토와 동시에 `.claude/agents/gemini-feedback.md` 에이전트를 호출하여 **다중 소스 편집 리뷰를 병렬로 수행**한다.
 
-→ 자체 검토 + Gemini 리뷰 결과를 종합하여 텍스트 수정을 먼저 반영한 후,
+이 에이전트는 CLAUDE.md의 플래그에 따라 최대 3개 소스의 피드백을 수집한다:
+
+1. **NIM 피드백** (`nim_feedback: true` 시): NIM 프록시의 대형 모델로 편집 리뷰 → `EDITOR_FEEDBACK_nim.md`
+2. **Ollama 피드백** (`ollama_feedback: true` 시): 로컬 Ollama 모델로 편집 리뷰 → `EDITOR_FEEDBACK_ollama.md`
+3. **Gemini 피드백** (항상): Gemini CLI로 편집 리뷰. NIM/Ollama 결과가 있으면 참고 자료로 활용 → `EDITOR_FEEDBACK_gemini.md`
+
+→ 자체 검토 + 다중 소스 리뷰 결과를 종합하여 텍스트 수정을 먼저 반영한 후,
   `.claude/agents/korean-proofreader.md` 기준으로 한글 교정을 수행한다 (맞춤법, 번역투, AI 습관 단어, 줄임표 등).
 
-> **순서 근거**: Gemini가 텍스트 수정을 제안하면 교정 대상이 바뀌므로, 한글 교정은 반드시 모든 텍스트 수정이 완료된 후 마지막에 수행한다.
+> **순서 근거**: 편집 리뷰가 텍스트 수정을 제안하면 교정 대상이 바뀌므로, 한글 교정은 반드시 모든 텍스트 수정이 완료된 후 마지막에 수행한다.
 
-소설 CLAUDE.md에 `ollama_proofread: true`가 설정된 경우, 한글 교정 완료 후 **Ollama 2차 교차 검증**을 추가로 수행한다. 이 옵션은 NIM 프록시 등 Claude 이외의 모델로 집필할 때 교정 정확도를 보완하기 위한 것이다.
-
-```
-mcp__ollama-proofreader__proofread(file_path="에피소드 절대 경로")
-```
-
-- 결과는 `{소설폴더}/reviews/`에 자동 저장된다.
-- **로컬 모델은 정확도가 낮다. 맹목적으로 반영하지 않는다.**
-- **반영 기준**: 1차 교정에서 **놓친 진짜 오류**만 반영한다. 문체 제안, 어색함 지적, 대사 교정 등 주관적 항목은 무시한다.
+> **NIM/Ollama 피드백 반영 기준**: NIM/Ollama는 Gemini보다 신뢰도가 낮을 수 있다. Gemini 리뷰에서 **놓친 진짜 오류**(맞춤법, 연속성, 논리 모순 등)만 선별 반영한다. 문체 제안, 어색함 지적, 대사 교정 등 주관적 항목은 무시한다.
 
 ### 3.4 연속성 검증 (Continuity Check)
 
@@ -202,7 +204,7 @@ mcp__ollama-proofreader__proofread(file_path="에피소드 절대 경로")
 4. **EPISODE_META 삽입** (선택): 에피소드 끝에 메타데이터 블록을 추가한다.
    - EPISODE_META의 `date` 필드에 **에피소드 집필 완료일**(오늘 날짜)을 `"YYYY-MM-DD"` 형식으로 기입한다.
    - 이 date 값은 리더에서 에피소드의 **업로드 날짜**로 표시된다.
-5. **Gemini 피드백 로그 갱신**: 3.3단계에서 처리한 Gemini 피드백의 반영/참고/건너뜀 결과를 `summaries/editor-feedback-log.md`에 기록한다. (Gemini 리뷰 자체는 3.3에서 이미 수행됨)
+5. **피드백 로그 갱신**: 3.3단계에서 처리한 편집 리뷰(Gemini/NIM/Ollama)의 반영/참고/건너뜀 결과를 `summaries/editor-feedback-log.md`에 기록한다. (리뷰 자체는 3.3에서 이미 수행됨)
 6. **Git 커밋**: 집필 진행 상황을 기록하기 위해 적절한 시점에 커밋한다.
    - 에피소드 집필 완료 후 (본문 + 요약 파일 함께)
    - config.json 업데이트 후 (에피소드 등록, 소설 설정 변경)
@@ -261,9 +263,8 @@ mcp__ollama-proofreader__proofread(file_path="에피소드 절대 경로")
 | P4 | 캐릭터 성격 드리프트 | 최근 5화의 주요 캐릭터 대사/행동이 `settings/03-characters.md`의 성격 설정과 부합하는지 통독 검토 |
 | P5 | 미이행 약속 점검 | `promise-tracker`에서 시한이 지났거나 방치된 약속이 있는지 확인 |
 | P6 | running-context 갱신 | `running-context.md`가 200줄 이내인지, 최신 상태를 정확히 반영하는지 확인 |
-| P7 | Gemini 일괄 리뷰 | 직전 점검 이후 에피소드를 `gemini-feedback` 배치 모드(모드 B)로 일괄 리뷰. 텍스트 수정 제안을 반영한다 |
+| P7 | 다중 소스 일괄 리뷰 | 직전 점검 이후 에피소드를 `gemini-feedback` 배치 모드(모드 B)로 일괄 리뷰. NIM/Ollama 피드백도 플래그에 따라 포함. 텍스트 수정 제안을 반영한다 |
 | P8 | 한글 품질 일괄 점검 | P7 반영 후 `korean-proofreader` 기준으로 재검수. 불규칙 활용, 수사 혼용, 번역투, AI 습관 단어 등 누적 오류를 일괄 교정 |
-| P8.5 | Ollama 교차 검증 (선택) | `ollama_proofread: true`인 경우만. P8 완료 후 `mcp__ollama-proofreader__proofread`로 2차 교차 검증. **놓친 오류만 반영** — 로컬 모델의 주관적 지적은 무시 |
 | P9 | 메타 참조 금지 점검 | 본문(나레이션·대사·독백)에서 "X화에서", "지난 화", "앞으로 N화" 등 에피소드 번호로 과거/미래를 지칭하는 표현이 없는지 전수 검사. 발견 시 날짜·장소·사건명으로 대체 |
 
 #### 점검 후 조치
@@ -496,29 +497,42 @@ generate_illustration(
 
 ## 10. 에디터 피드백 시스템
 
-외부 AI 에디터가 `EDITOR_FEEDBACK.md`에 피드백을 작성한다. 이 파일은 수시로 갱신되며, 집필 에이전트가 참고한다.
+다중 소스의 외부 AI 에디터가 각각의 피드백 파일을 생성한다. `.claude/agents/gemini-feedback.md` 에이전트가 전체 흐름을 오케스트레이션한다.
 
-### 10.1 피드백 처리 원칙
+### 10.1 피드백 소스 및 파일
+
+| 소스 | 파일 | 조건 | 신뢰도 |
+|------|------|------|--------|
+| Gemini | `EDITOR_FEEDBACK_gemini.md` | 항상 | 높음 (1차 기준) |
+| NIM | `EDITOR_FEEDBACK_nim.md` | `nim_feedback: true` | 중간 |
+| Ollama | `EDITOR_FEEDBACK_ollama.md` | `ollama_feedback: true` | 낮음 (보조) |
+
+- NIM/Ollama는 Gemini보다 **먼저** 실행되며, Gemini가 이들의 결과를 참고 자료로 활용한다.
+- **Gemini 피드백이 최종 기준**이다. NIM/Ollama 피드백은 Gemini가 놓친 오류를 보충하는 용도.
+
+### 10.2 피드백 처리 원칙
 
 1. **합리적 제안은 반영한다**: 문체 개선, 연속성 오류 지적, 캐릭터 일관성 문제 등.
 2. **설정과 충돌하는 제안은 건너뛴다**: 금지 사항, 세계관 규칙, CLAUDE.md 원칙에 어긋나는 제안은 사유를 기록하고 건너뛴다.
 3. **모든 처리 결과를 로그에 기록한다**: 반영/건너뜀/참고 여부와 사유를 남긴다.
 4. **재검토 의견은 재고한다**: 에디터가 `[재검토 요망]` 의견을 남긴 경우, 저자는 다시 한번 대안을 고민한다. 동의하면 반영하고, 여전히 이견이 있으면 사유를 기록하고 건너뛴다.
+5. **NIM/Ollama 피드백은 보수적으로 반영한다**: 맞춤법, 조사 오류, 연속성 모순 등 객관적 오류만 반영. 문체 제안, 어색함 지적 등 주관적 항목은 무시한다.
 
-### 10.2 처리 로그 (`summaries/editor-feedback-log.md`)
+### 10.3 처리 로그 (`summaries/editor-feedback-log.md`)
 
 피드백을 확인할 때마다 처리 결과를 기록한다. 이 로그로 "어디까지 봤는지"를 추적한다.
 
-> **타임스탬프**: `EDITOR_FEEDBACK.md`에 시간(`HH:MM`)이 포함된 경우, 로그의 날짜·피드백 섹션에도 동일하게 시간을 포함하여 1:1 대응이 가능하게 한다.
+> **타임스탬프**: 피드백 파일에 시간(`HH:MM`)이 포함된 경우, 로그의 날짜·피드백 섹션에도 동일하게 시간을 포함하여 1:1 대응이 가능하게 한다.
 
 ```markdown
 # 에디터 피드백 처리 로그
 
-| 날짜 | 피드백 섹션 | 결과 | 비고 |
-|------|------------|------|------|
-| 2026-02-27 23:40 | [2026-02-27 23:40] 1화 §1 Language 개선제안 | ✅ 반영 | 6화 집필 시 반영 |
-| 2026-02-27 23:40 | [2026-02-27 23:40] 1화 §2 Continuity 체크포인트 | 📌 참고 | 의도된 복선, 향후 전개에서 해명 예정 |
-| 2026-02-27 23:40 | [2026-02-27 23:40] 1화 §3 Character 박준호 | ⏭️ 건너뜀 | 프롤로그 한정 인물, 설정 의도대로 |
+| 날짜 | 소스 | 피드백 섹션 | 결과 | 비고 |
+|------|------|------------|------|------|
+| 2026-02-27 23:40 | Gemini | 1화 §1 Language 개선제안 | ✅ 반영 | 6화 집필 시 반영 |
+| 2026-02-27 23:40 | Gemini | 1화 §2 Continuity 체크포인트 | 📌 참고 | 의도된 복선, 향후 전개에서 해명 예정 |
+| 2026-02-27 23:40 | NIM | 1화 조사 오류 지적 | ✅ 반영 | Gemini가 놓친 조사 오류 |
+| 2026-02-27 23:40 | Ollama | 1화 문체 제안 | ⏭️ 건너뜀 | 주관적 문체 의견, 설정 의도대로 |
 ```
 
 **결과 표기:**
@@ -526,9 +540,9 @@ generate_illustration(
 - `📌 참고` — 유효한 지적이나 즉시 반영이 아닌 향후 참고 (복선, 장기 계획 등)
 - `⏭️ 건너뜀` — 설정 충돌, 비합리적 제안 등으로 미반영 (사유 필수)
 
-### 10.3 워크플로우 연동
+### 10.4 워크플로우 연동
 
-- **3.1 Prep**: `EDITOR_FEEDBACK.md` 존재 시 → `editor-feedback-log.md`와 대조 → 미처리 피드백 확인 → 이번 화 관련 항목 참고
+- **3.1 Prep**: `EDITOR_FEEDBACK_gemini.md` (및 `_nim.md`, `_ollama.md`) 존재 시 → `editor-feedback-log.md`와 대조 → 미처리 피드백 확인 → 이번 화 관련 항목 참고
 - **3.5 Post-Process**: 확인한 피드백의 처리 결과를 `editor-feedback-log.md`에 기록
 
 ---
