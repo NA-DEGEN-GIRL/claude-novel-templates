@@ -58,6 +58,7 @@ CHARS=$(cat settings/03-characters.md 2>/dev/null) && \
 WORLD=$(cat settings/04-worldbuilding.md 2>/dev/null) && \
 python3 /root/novel/nim-proxy/chat.py \
   -m "{nim_feedback_model}" \
+  -T 600 \
   -s "$GUIDELINES" \
   "아래 소설 에피소드를 리뷰해. 결과는 EDITOR_FEEDBACK 형식으로 출력해.
 
@@ -124,6 +125,7 @@ NIM_REF=$(cat EDITOR_FEEDBACK_nim.md 2>/dev/null) && \
 OLLAMA_REF=$(cat EDITOR_FEEDBACK_ollama.md 2>/dev/null) && \
 python3 /root/novel/nim-proxy/chat.py \
   -m "mistralai/mistral-large-3-675b-instruct-2512" \
+  -T 600 \
   -s "$GUIDELINES" \
   "아래 소설 에피소드를 리뷰해. 결과는 EDITOR_FEEDBACK 형식으로 출력해.
 
