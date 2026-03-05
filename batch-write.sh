@@ -1,18 +1,22 @@
 #!/bin/bash
 # 소설 배치 집필 스크립트 (템플릿)
 #
+# 이 파일을 소설 폴더 안에 두고 실행한다.
 # Claude Code의 claude -p 를 반복 호출하여 소설을 자동으로 집필한다.
 # 매 배치마다 CLAUDE.md의 전체 워크플로(집필 → 리뷰 → 교정 → 커밋)를 수행한다.
+#
+# === 설치 위치 ===
+#   no-title-XXX/batch-write.sh   ← 소설 폴더 안에 둔다
 #
 # === 사용 전 설정 ===
 # 아래 변수들을 본인 소설에 맞게 수정하세요.
 # 또는 Claude Code에게 "batch-write.sh를 내 소설에 맞게 수정해줘"라고 요청하세요.
 #
 # === 사용법 ===
-#   bash batch-write.sh                  # 전체 범위 실행
-#   bash batch-write.sh 50 100           # 50~100화만 실행
-#   nohup bash batch-write.sh &          # 백그라운드 실행 (터미널 종료해도 유지)
-#   nohup bash batch-write.sh 50 100 &   # 백그라운드 + 범위 지정
+#   cd no-title-XXX && bash batch-write.sh                  # 전체 범위
+#   cd no-title-XXX && bash batch-write.sh 50 100           # 50~100화만
+#   cd no-title-XXX && nohup bash batch-write.sh &          # 백그라운드
+#   cd no-title-XXX && nohup bash batch-write.sh 50 100 &   # 백그라운드 + 범위
 
 set -euo pipefail
 
@@ -20,9 +24,6 @@ set -euo pipefail
 unset CLAUDECODE 2>/dev/null || true
 
 # === 소설별 설정 (수정 필요) ===
-NOVEL_ID="no-title-XXX"                    # 소설 폴더명
-PROJECT_DIR="/root/novel"                  # 프로젝트 루트
-NOVEL_DIR="${PROJECT_DIR}/${NOVEL_ID}"
 BATCH_SIZE=5                               # 배치당 화수 (권장: 3~5)
 DEFAULT_START=1                            # 시작 화수
 DEFAULT_END=100                            # 종료 화수
@@ -49,16 +50,23 @@ ARC_BOUNDARIES=(100 200 300 400)
 USE_EXTERNAL_FEEDBACK=true
 # ================================================
 
-LOG_FILE="${PROJECT_DIR}/batch-write-${NOVEL_ID}.log"
+# 소설 폴더 = 스크립트 위치 = CWD
+NOVEL_DIR="$(cd "$(dirname "$0")" && pwd)"
+NOVEL_NAME="$(basename "$NOVEL_DIR")"
+LOG_FILE="${NOVEL_DIR}/batch-write.log"
+
 START=${1:-$DEFAULT_START}
 END=${2:-$DEFAULT_END}
-LAST_CHECKPOINT=$((START - 1))             # 마지막 정기 점검 화수 추적
+LAST_CHECKPOINT=$((START - 1))
 
 log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" | tee -a "$LOG_FILE"
 }
 
-log "=== 배치 집필 시작: ${NOVEL_ID} ${START}화 ~ ${END}화 ==="
+# 소설 폴더에서 실행 (.claude/agents/ 자동 로드)
+cd "$NOVEL_DIR"
+
+log "=== 배치 집필 시작: ${NOVEL_NAME} ${START}화 ~ ${END}화 ==="
 
 for (( batch_start=START; batch_start<=END; batch_start+=BATCH_SIZE )); do
     batch_end=$((batch_start + BATCH_SIZE - 1))
@@ -67,28 +75,28 @@ for (( batch_start=START; batch_start<=END; batch_start+=BATCH_SIZE )); do
     fi
 
     arc=$(get_arc "$batch_start")
-    arc_file="${NOVEL_DIR}/plot/${arc}.md"
+    arc_file="plot/${arc}.md"
 
     log "--- 배치 ${batch_start}~${batch_end}화 (${arc}) 시작 ---"
 
     # 플롯 파일이 없으면 자동 생성
     if [ ! -f "$arc_file" ]; then
         log "${arc}.md 플롯 생성 중..."
-        cd "$PROJECT_DIR" && claude -p \
-"${NOVEL_ID} 소설의 ${arc} 상세 플롯을 작성해줘.
+        claude -p \
+"${arc} 상세 플롯을 작성해줘.
 
 사전 읽기:
-- ${NOVEL_ID}/CLAUDE.md (작품 개요, 구성)
-- ${NOVEL_ID}/plot/ 폴더의 기존 아크 파일 (형식 참조)
-- ${NOVEL_ID}/plot/master-outline.md (해당 아크 개요)
-- ${NOVEL_ID}/summaries/running-context.md (직전 아크 종료 상태)
+- CLAUDE.md (작품 개요, 구성)
+- plot/ 폴더의 기존 아크 파일 (형식 참조)
+- plot/master-outline.md (해당 아크 개요)
+- summaries/running-context.md (직전 아크 종료 상태)
 
 작성 규칙:
 1. 기존 아크 플롯 파일과 동일한 형식으로 작성
 2. master-outline.md의 해당 아크 개요를 따름
 3. 10화 블록 상세 포함
 4. 캐릭터 아크, 복선 계획, 주요 전투/이벤트 목록 포함
-5. 결과를 ${NOVEL_ID}/plot/${arc}.md에 저장" >> "$LOG_FILE" 2>&1
+5. 결과를 plot/${arc}.md에 저장" >> "$LOG_FILE" 2>&1
 
         if [ ! -f "$arc_file" ]; then
             log "ERROR: ${arc}.md 생성 실패. 스크립트 중단."
@@ -105,7 +113,7 @@ for (( batch_start=START; batch_start<=END; batch_start+=BATCH_SIZE )); do
     fi
 
     # 배치 집필 프롬프트 — CLAUDE.md 워크플로에 위임하고 배치 고유 파라미터만 전달
-    PROMPT="${NOVEL_ID} 소설 ${batch_start}~${batch_end}화를 순차 집필해줘.
+    PROMPT="${batch_start}~${batch_end}화를 순차 집필해줘.
 
 [배치 파라미터]
 - 범위: ${batch_start}화 ~ ${batch_end}화
@@ -114,9 +122,9 @@ for (( batch_start=START; batch_start<=END; batch_start+=BATCH_SIZE )); do
 - 각 화 집필 전 summaries/running-context.md를 다시 읽어 현재 상태를 확인한다. 이전 화 집필 시 메모리에 남은 내용에 의존하지 않는다.
 
 [워크플로]
-CLAUDE.md 섹션 3의 전체 워크플로(3.1 사전 준비 → 3.2 집필 → 3.3 자체 검토 → 3.4 연속성 검증 → 3.5 후처리 → 커밋)를 매 화마다 빠짐없이 따른다.
-- 3.3에서 reviewer, continuity-checker, gemini-feedback 에이전트를 병렬 실행한다.
-- 3.3 완료 후 korean-proofreader로 한글 교정을 수행한다.
+CLAUDE.md의 전체 워크플로(사전 준비 → 집필 → 자체 검토 → 연속성 검증 → 후처리 → 커밋)를 매 화마다 빠짐없이 따른다.
+- 자체 검토 시 reviewer, continuity-checker, gemini-feedback 에이전트를 병렬 실행한다.
+- 에이전트 리뷰 완료 후 korean-proofreader로 한글 교정을 수행한다.
 ${FEEDBACK_INSTRUCTION}
 
 [에러 처리]
@@ -153,12 +161,12 @@ ${boundary}화(아크 종료) 완료 후:
 
     log "claude 실행 중 (${batch_start}~${batch_end}화)..."
 
-    if cd "$PROJECT_DIR" && claude -p "$PROMPT" >> "$LOG_FILE" 2>&1; then
+    if claude -p "$PROMPT" >> "$LOG_FILE" 2>&1; then
         log "배치 ${batch_start}~${batch_end}화 완료"
     else
         EXIT_CODE=$?
         log "ERROR: 배치 ${batch_start}~${batch_end}화 실패 (exit code: ${EXIT_CODE})"
-        log "재시작: bash batch-write.sh $((batch_start)) ${END}"
+        log "재시작: cd ${NOVEL_DIR} && bash batch-write.sh $((batch_start)) ${END}"
         exit 1
     fi
 
@@ -174,4 +182,4 @@ ${boundary}화(아크 종료) 완료 후:
     fi
 done
 
-log "=== 전체 집필 완료: ${NOVEL_ID} ${START}화 ~ ${END}화 ==="
+log "=== 전체 집필 완료: ${NOVEL_NAME} ${START}화 ~ ${END}화 ==="

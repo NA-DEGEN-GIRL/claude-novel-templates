@@ -347,7 +347,13 @@ NovelAI API로 캐릭터/삽화/표지를 자동 생성한다. `character-prompt
 → 수정 반영 + 한글 교정 → 피드백 로그 → config.json 등록 → 커밋
 ```
 
-### 설정 방법
+### 설치
+
+`batch-write.sh`를 소설 폴더 안에 복사한다. 소설 폴더에서 실행해야 `.claude/agents/`가 자동으로 로드된다.
+
+```bash
+cp batch-write.sh my-novel/batch-write.sh
+```
 
 스크립트 상단의 변수를 본인 소설에 맞게 수정한다. **직접 수정하거나**, Claude Code에게 맡길 수 있다:
 
@@ -361,8 +367,6 @@ CLAUDE.md와 plot/ 구조를 참고해서 아크 매핑, 시작/종료 화수,
 
 | 변수 | 설명 | 예시 |
 |------|------|------|
-| `NOVEL_ID` | 소설 폴더명 | `"no-title-001"` |
-| `PROJECT_DIR` | 프로젝트 루트 경로 | `"/root/novel"` |
 | `DEFAULT_START` / `DEFAULT_END` | 기본 집필 범위 | `1` / `400` |
 | `get_arc()` | 화수 → 아크명 매핑 함수 | 소설 구조에 따라 |
 | `ARC_BOUNDARIES` | 아크 종료 화수 (종료 점검 트리거) | `(100 200 300)` |
@@ -371,6 +375,8 @@ CLAUDE.md와 plot/ 구조를 참고해서 아크 매핑, 시작/종료 화수,
 ### 실행
 
 ```bash
+cd my-novel
+
 # 전체 범위 실행
 bash batch-write.sh
 
@@ -388,10 +394,10 @@ bash batch-write.sh 73 200
 
 ```bash
 # 진행 상황 확인
-tail -20 batch-write-no-title-XXX.log
+tail -20 my-novel/batch-write.log
 
 # 실시간 모니터링
-tail -f batch-write-no-title-XXX.log
+tail -f my-novel/batch-write.log
 
 # 중단
 kill $(pgrep -f batch-write)
