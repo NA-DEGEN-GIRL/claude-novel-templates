@@ -291,7 +291,7 @@ next_episode_hook: "{{HOOK}}"
 
 ---
 
-## 9. 대화 관계 규칙
+## 8. 대화 관계 규칙
 
 ### 8.1 호칭/어투 매트릭스
 
@@ -330,7 +330,7 @@ next_episode_hook: "{{HOOK}}"
 
 ---
 
-## 10. 에디터 피드백 시스템
+## 9. 에디터 피드백 시스템
 
 `.claude/agents/gemini-feedback.md` 에이전트가 다중 소스(Gemini/NIM/Ollama) 피드백을 오케스트레이션한다.
 
@@ -341,7 +341,7 @@ next_episode_hook: "{{HOOK}}"
 
 ---
 
-## 11. 소설별 커스터마이징 안내
+## 10. 소설별 커스터마이징 안내
 
 이 템플릿을 복사한 후, `{{PLACEHOLDER}}`를 실제 값으로 채우고 아래를 작업한다:
 
@@ -351,6 +351,6 @@ next_episode_hook: "{{HOOK}}"
 4. `settings/04-worldbuilding.md` — 세계관 핵심 설정
 5. `cover-prompt.txt` — 표지 이미지 생성용 NovelAI 프롬프트
 6. 필요 시 `settings/06-humor-guide.md` 등 추가 가이드 작성
-7. CLAUDE.md 섹션 9 "대화 관계 규칙" — 주요 캐릭터 쌍의 호칭/어투 매트릭스 작성
+7. CLAUDE.md 섹션 8 "대화 관계 규칙" — 주요 캐릭터 쌍의 호칭/어투 매트릭스 작성
 
 ---

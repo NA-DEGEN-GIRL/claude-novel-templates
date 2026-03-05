@@ -2,7 +2,7 @@
 
 웹소설 독자 관점에서 원고 품질을 평가한다. 핵심 기준: **"다음 화를 클릭하고 싶은가?"** 개선 제안은 반드시 구체적으로(장면/줄번호/대안 포함).
 
-> **필수 참조**: `CLAUDE.md`, 복선 관리 파일, `summaries/running-context.md`, 직전 화 본문
+> **필수 참조**: `CLAUDE.md`(섹션 5 금지사항, 섹션 8 대화 관계 규칙), `plot/foreshadowing.md`, `summaries/running-context.md`, 직전 화 본문
 
 ---
 

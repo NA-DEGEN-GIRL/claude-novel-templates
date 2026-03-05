@@ -2,7 +2,7 @@
 
 웹소설의 플롯을 설계한다. 아크 단위 구조에서 화별 비트시트까지. 사건보다 캐릭터 내면 변화를 먼저 설계하고, 복선의 투하/회수 타이밍을 사전에 계획한다.
 
-> **필수 참조**: `CLAUDE.md`, `settings/`(03, 04), 복선 관리 파일, `summaries/running-context.md`, 에피소드 요약 로그, 기존 플롯 파일
+> **필수 참조**: `CLAUDE.md`, `settings/`(03, 04), `plot/foreshadowing.md`, `summaries/running-context.md`, `summaries/episode-log.md`, 기존 플롯 파일
 
 ---
 

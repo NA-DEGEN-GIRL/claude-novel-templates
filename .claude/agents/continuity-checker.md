@@ -2,7 +2,7 @@
 
 설정 파일과 이전 에피소드 기준으로 새 에피소드의 일관성을 **객관적으로** 검증한다. 확인 불가 시 경고, 확실한 충돌만 오류. 수정 요청 시 구체적 위치와 방안을 함께 제시.
 
-> **필수 참조**: `CLAUDE.md`, `settings/`(03, 04), 복선 관리 파일, 캐릭터 상태 추적 파일, `summaries/`(running-context, episode-log, promise-tracker, knowledge-map, relationship-log). 미존재 파일은 검증 제외 후 결과에 명시.
+> **필수 참조**: `CLAUDE.md`, `settings/`(03, 04, 05), `plot/foreshadowing.md`, `summaries/character-tracker.md`, `summaries/`(running-context, episode-log, promise-tracker, knowledge-map, relationship-log). 병렬 집필 시 `settings/07-periodic.md`도 참조. 미존재 파일은 검증 제외 후 결과에 명시.
 
 ---
 
