@@ -54,6 +54,7 @@ USE_EXTERNAL_FEEDBACK=true
 NOVEL_DIR="$(cd "$(dirname "$0")" && pwd)"
 NOVEL_NAME="$(basename "$NOVEL_DIR")"
 LOG_FILE="${NOVEL_DIR}/batch-write.log"
+DETAIL_LOG="${NOVEL_DIR}/batch-write-detail.log"
 
 START=${1:-$DEFAULT_START}
 END=${2:-$DEFAULT_END}
@@ -67,6 +68,7 @@ log() {
 cd "$NOVEL_DIR"
 
 log "=== 배치 집필 시작: ${NOVEL_NAME} ${START}화 ~ ${END}화 ==="
+log "상세 로그: tail -f ${DETAIL_LOG}"
 
 for (( batch_start=START; batch_start<=END; batch_start+=BATCH_SIZE )); do
     batch_end=$((batch_start + BATCH_SIZE - 1))
@@ -160,15 +162,37 @@ ${boundary}화(아크 종료) 완료 후:
     done
 
     log "claude 실행 중 (${batch_start}~${batch_end}화)..."
+    echo "===== [$(date '+%H:%M:%S')] 배치 ${batch_start}~${batch_end}화 시작 =====" >> "$DETAIL_LOG"
 
-    if claude -p "$PROMPT" >> "$LOG_FILE" 2>&1; then
+    # claude 출력을 상세 로그에 기록하면서, 파일 생성을 백그라운드로 감시
+    (
+        while true; do
+            sleep 30
+            for (( ep=batch_start; ep<=batch_end; ep++ )); do
+                ep_arc=$(get_arc "$ep")
+                ep_file="chapters/${ep_arc}/chapter-$(printf '%02d' "$ep").md"
+                if [ -f "$ep_file" ]; then
+                    size=$(wc -c < "$ep_file")
+                    echo "[$(date '+%H:%M:%S')] ${ep}화 감지 (${size} bytes)" >> "$DETAIL_LOG"
+                fi
+            done
+        done
+    ) &
+    MONITOR_PID=$!
+
+    if claude -p "$PROMPT" >> "$DETAIL_LOG" 2>&1; then
+        kill "$MONITOR_PID" 2>/dev/null; wait "$MONITOR_PID" 2>/dev/null
         # 실제 파일 생성 여부 검증 (claude -p가 exit 0이어도 내부 에러로 파일 미생성 가능)
         missing=()
+        created=()
         for (( ep=batch_start; ep<=batch_end; ep++ )); do
             ep_arc=$(get_arc "$ep")
             ep_file="chapters/${ep_arc}/chapter-$(printf '%02d' "$ep").md"
             if [ ! -f "$ep_file" ]; then
                 missing+=("${ep}화")
+            else
+                size=$(wc -c < "$ep_file")
+                created+=("${ep}화(${size}b)")
             fi
         done
         if [ ${#missing[@]} -gt 0 ]; then
@@ -176,9 +200,10 @@ ${boundary}화(아크 종료) 완료 후:
             log "재시작: cd ${NOVEL_DIR} && bash batch-write.sh $((batch_start)) ${END}"
             exit 1
         fi
-        log "배치 ${batch_start}~${batch_end}화 완료 (파일 검증 통과)"
+        log "배치 ${batch_start}~${batch_end}화 완료: ${created[*]}"
     else
         EXIT_CODE=$?
+        kill "$MONITOR_PID" 2>/dev/null; wait "$MONITOR_PID" 2>/dev/null
         log "ERROR: 배치 ${batch_start}~${batch_end}화 실패 (exit code: ${EXIT_CODE})"
         log "재시작: cd ${NOVEL_DIR} && bash batch-write.sh $((batch_start)) ${END}"
         exit 1
