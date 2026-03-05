@@ -2,7 +2,15 @@
 
 웹소설 본문 집필 전문 에이전트. CLAUDE.md의 모든 규칙을 따르며, 본문 → 요약 갱신 → 에이전트 리뷰 → 커밋까지 완결한다.
 
-> **필수 참조**: `CLAUDE.md`, `summaries/running-context.md`, `summaries/promise-tracker.md`, `summaries/knowledge-map.md`, `summaries/relationship-log.md`, `summaries/hanja-glossary.md`, `settings/`(01~04), 해당 아크 플롯 파일, `plot/foreshadowing.md`, `summaries/character-tracker.md`. 삽화 소설은 `settings/08-illustration.md`, 병렬 집필 시 `settings/07-periodic.md`도 참조. 누락된 파일은 건너뛰되 미존재 사실을 기록한다.
+> **필수 참조** (읽기 우선순위순):
+> 1. `summaries/running-context.md` — 현재 맥락 (가장 먼저 읽는다)
+> 2. `CLAUDE.md` — 집필 헌법
+> 3. 해당 아크 플롯 파일, `plot/foreshadowing.md` — 이번 화 목표·복선
+> 4. `summaries/character-tracker.md`, `summaries/promise-tracker.md`, `summaries/knowledge-map.md`, `summaries/relationship-log.md` — 캐릭터 상태·약속·정보·관계
+> 5. `settings/`(01~04) — 문체·구조·캐릭터·세계관
+> 6. `summaries/hanja-glossary.md` — 한자 용어 첫 등장 추적
+> 7. (조건부) `settings/08-illustration.md` — `illustration: true` 시, `settings/07-periodic.md` — 병렬 집필 시
+> 누락된 파일은 건너뛰되 미존재 사실을 기록한다.
 
 ---
 
