@@ -348,6 +348,18 @@ NovelAI API로 캐릭터/삽화/표지를 자동 생성한다. `character-prompt
 
 `claude -p`를 5화 단위로 반복 호출한다. 각 배치는 독립된 세션에서 실행되며, **요약 파일(running-context, character-tracker 등)을 통해 맥락을 이어받는다**. compact(컨텍스트 자동 압축)와 실질적으로 동일하지만, 실패 복구가 쉽고 백그라운드 실행이 가능하다.
 
+### NIM Proxy와 배치 조합
+
+Claude Code는 긴 세션에서 컨텍스트 윈도우가 차면 자동으로 이전 대화를 압축(compact)한다. Claude API에서는 이 메커니즘이 잘 동작하지만, **NIM Proxy를 통해 오픈소스 모델(Mistral, Qwen, GLM 등)을 메인 집필 AI로 사용하는 경우** 모델에 따라 compact가 불안정하거나 컨텍스트 한계에 더 빨리 도달할 수 있다.
+
+배치 방식은 이 문제를 구조적으로 우회한다:
+
+- **매 배치가 새 세션**: 5화마다 `claude -p`가 새로 시작되므로 컨텍스트가 누적되지 않는다
+- **요약 파일이 외부 메모리**: running-context, character-tracker, knowledge-map 등이 세션 간 맥락 전달을 담당한다. 모델이 기억하지 못해도 파일에 기록되어 있다
+- **compact 불필요**: 세션 내에서 컨텍스트가 넘칠 일이 거의 없다. 5화 집필 + 리뷰는 대부분의 모델 컨텍스트 윈도우 안에서 완료된다
+
+결과적으로 NIM Proxy + 배치 조합이면 **오픈소스 모델로도 수백 화 연속 집필**이 가능하다. `.claude/settings.local.json`의 `env` 섹션에 프록시 주소를 설정하면 된다 (아래 "권한 설정" 참조).
+
 ### 각 배치에서 하는 일
 
 매 화마다 CLAUDE.md에 정의된 전체 워크플로를 수행한다:
