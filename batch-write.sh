@@ -16,13 +16,17 @@
 
 set -euo pipefail
 
+# 중첩 세션 방지 우회 (Claude Code 세션 내에서 실행 시 필요)
+unset CLAUDECODE 2>/dev/null || true
+
 # === 소설별 설정 (수정 필요) ===
 NOVEL_ID="no-title-XXX"                    # 소설 폴더명
 PROJECT_DIR="/root/novel"                  # 프로젝트 루트
 NOVEL_DIR="${PROJECT_DIR}/${NOVEL_ID}"
-BATCH_SIZE=5                               # 배치당 화수 (권장: 5)
+BATCH_SIZE=5                               # 배치당 화수 (권장: 3~5)
 DEFAULT_START=1                            # 시작 화수
 DEFAULT_END=100                            # 종료 화수
+CHECKPOINT_INTERVAL=5                      # 정기 점검 주기 (CLAUDE.md 기본값: 5화)
 
 # 아크 구성 (소설 구조에 맞게 수정)
 # get_arc 함수: 화수 → 아크명 매핑
@@ -39,16 +43,16 @@ get_arc() {
 # 아크 전환 화수 목록 (부 종료 시 점검 트리거)
 ARC_BOUNDARIES=(100 200 300 400)
 
-# gemini-feedback 포함 여부 (Gemini CLI 미설치 시 false)
-USE_GEMINI=true
+# 외부 AI 피드백 에이전트 사용 여부
+# true: gemini-feedback 에이전트 실행 (Gemini CLI / NIM / Ollama 오케스트레이션)
+# false: 외부 피드백 건너뜀 (continuity-checker, reviewer, korean-proofreader는 여전히 실행)
+USE_EXTERNAL_FEEDBACK=true
 # ================================================
-
-# 중첩 세션 방지 우회 (Claude Code 세션 내에서 실행 시 필요)
-unset CLAUDECODE 2>/dev/null || true
 
 LOG_FILE="${PROJECT_DIR}/batch-write-${NOVEL_ID}.log"
 START=${1:-$DEFAULT_START}
 END=${2:-$DEFAULT_END}
+LAST_CHECKPOINT=$((START - 1))             # 마지막 정기 점검 화수 추적
 
 log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" | tee -a "$LOG_FILE"
@@ -73,15 +77,18 @@ for (( batch_start=START; batch_start<=END; batch_start+=BATCH_SIZE )); do
         cd "$PROJECT_DIR" && claude -p \
 "${NOVEL_ID} 소설의 ${arc} 상세 플롯을 작성해줘.
 
-작성 규칙:
-1. 이전 아크 플롯 파일의 형식을 따라 작성
-2. plot/master-outline.md의 해당 아크 개요를 따라감
-3. 직전 아크 종료 상태(summaries/running-context.md)를 이어받음
-4. 10화 블록 상세 포함
-5. 캐릭터 아크, 복선 계획, 주요 전투/이벤트 목록 포함
-6. 결과를 ${NOVEL_ID}/plot/${arc}.md에 저장
+사전 읽기:
+- ${NOVEL_ID}/CLAUDE.md (작품 개요, 구성)
+- ${NOVEL_ID}/plot/ 폴더의 기존 아크 파일 (형식 참조)
+- ${NOVEL_ID}/plot/master-outline.md (해당 아크 개요)
+- ${NOVEL_ID}/summaries/running-context.md (직전 아크 종료 상태)
 
-CLAUDE.md의 모든 규칙을 준수한다." >> "$LOG_FILE" 2>&1
+작성 규칙:
+1. 기존 아크 플롯 파일과 동일한 형식으로 작성
+2. master-outline.md의 해당 아크 개요를 따름
+3. 10화 블록 상세 포함
+4. 캐릭터 아크, 복선 계획, 주요 전투/이벤트 목록 포함
+5. 결과를 ${NOVEL_ID}/plot/${arc}.md에 저장" >> "$LOG_FILE" 2>&1
 
         if [ ! -f "$arc_file" ]; then
             log "ERROR: ${arc}.md 생성 실패. 스크립트 중단."
@@ -90,38 +97,57 @@ CLAUDE.md의 모든 규칙을 준수한다." >> "$LOG_FILE" 2>&1
         log "${arc}.md 생성 완료"
     fi
 
-    # gemini-feedback 지시문
-    if [ "$USE_GEMINI" = true ]; then
-        GEMINI_INSTRUCTION="7. gemini-feedback 에이전트를 반드시 실행한다 (gemini CLI로 편집 리뷰 -> 피드백 반영 -> 한글 교정 순서)."
+    # 외부 피드백 지시문
+    if [ "$USE_EXTERNAL_FEEDBACK" = true ]; then
+        FEEDBACK_INSTRUCTION="- gemini-feedback 에이전트를 포함하여 외부 AI 편집 리뷰도 수행한다."
     else
-        GEMINI_INSTRUCTION="7. gemini-feedback은 건너뛴다 (Gemini CLI 미설치)."
+        FEEDBACK_INSTRUCTION="- gemini-feedback 에이전트는 건너뛴다. continuity-checker, reviewer, korean-proofreader는 정상 수행한다."
     fi
 
-    # 배치 집필 프롬프트
+    # 배치 집필 프롬프트 — CLAUDE.md 워크플로에 위임하고 배치 고유 파라미터만 전달
     PROMPT="${NOVEL_ID} 소설 ${batch_start}~${batch_end}화를 순차 집필해줘.
 
-[집필 지시]
-1. CLAUDE.md의 집필 워크플로를 매 화마다 빠짐없이 따른다.
-2. plot/${arc}.md의 해당 화수 플롯을 따라간다.
-3. 직전 에피소드부터 이어서 쓴다 (summaries/running-context.md 참조).
-4. CLAUDE.md에 정의된 화당 분량을 준수하고, 매 화 엔딩 훅 필수.
-5. 요약 파일을 매 화 갱신한다.
-6. config.json에 새 에피소드 등록 + totalEpisodes 업데이트.
-${GEMINI_INSTRUCTION}
-8. 매 화 완료 후 커밋한다.
-9. 에러 발생 시 해당 화에서 멈추고 상황을 로그에 남긴다."
+[배치 파라미터]
+- 범위: ${batch_start}화 ~ ${batch_end}화
+- 플롯: plot/${arc}.md 참조
+- 1화를 완전히 완료(집필 + 리뷰 + 교정 + 요약 갱신 + 커밋)한 후 다음 화로 넘어간다.
+- 각 화 집필 전 summaries/running-context.md를 다시 읽어 현재 상태를 확인한다. 이전 화 집필 시 메모리에 남은 내용에 의존하지 않는다.
 
-    # 정기 점검 (BATCH_SIZE 화 배수)
-    if (( batch_end % BATCH_SIZE == 0 )); then
+[워크플로]
+CLAUDE.md 섹션 3의 전체 워크플로(3.1 사전 준비 → 3.2 집필 → 3.3 자체 검토 → 3.4 연속성 검증 → 3.5 후처리 → 커밋)를 매 화마다 빠짐없이 따른다.
+- 3.3에서 reviewer, continuity-checker, gemini-feedback 에이전트를 병렬 실행한다.
+- 3.3 완료 후 korean-proofreader로 한글 교정을 수행한다.
+${FEEDBACK_INSTRUCTION}
+
+[에러 처리]
+에러 발생 시 에러 내용을 stdout에 출력하고, 해당 화에서 작업을 중단한다."
+
+    # 정기 점검: 직전 점검으로부터 CHECKPOINT_INTERVAL화 이상 경과 시
+    episodes_since_checkpoint=$((batch_end - LAST_CHECKPOINT))
+    if [ "$episodes_since_checkpoint" -ge "$CHECKPOINT_INTERVAL" ]; then
         PROMPT="${PROMPT}
-10. ${batch_end}화 완료 후 CLAUDE.md의 정기 점검 항목을 수행한다."
+
+[정기 점검]
+${batch_end}화 완료 후, CLAUDE.md/settings/07-periodic.md의 정기 점검(P1~P9)을 수행한다."
+        if [ "$USE_EXTERNAL_FEEDBACK" = true ]; then
+            PROMPT="${PROMPT}
+P7은 gemini-feedback 모드 B(일괄 리뷰)로 직전 점검 이후 에피소드를 대상으로 한다."
+        fi
+        LAST_CHECKPOINT=$batch_end
     fi
 
     # 아크 전환 점검
     for boundary in "${ARC_BOUNDARIES[@]}"; do
         if [ "$batch_start" -le "$boundary" ] && [ "$batch_end" -ge "$boundary" ]; then
             PROMPT="${PROMPT}
-11. ${boundary}화(아크 종료) 완료 후 아크 종료 점검을 수행한다: 아크 전체 요약, 목표 달성도, running-context 대정리."
+
+[아크 종료 점검]
+${boundary}화(아크 종료) 완료 후:
+1. 정기 점검(P1~P9)을 수행한다 (위에서 미수행 시).
+2. 아크 전체 요약을 summaries/arc-summaries/에 작성한다.
+3. 아크 목표 달성도를 검토한다.
+4. running-context.md를 대정리한다 (해당 아크 내용을 아크 요약으로 이관)."
+            LAST_CHECKPOINT=$boundary
         fi
     done
 

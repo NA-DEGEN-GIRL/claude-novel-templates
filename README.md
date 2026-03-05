@@ -366,7 +366,7 @@ CLAUDE.md와 plot/ 구조를 참고해서 아크 매핑, 시작/종료 화수,
 | `DEFAULT_START` / `DEFAULT_END` | 기본 집필 범위 | `1` / `400` |
 | `get_arc()` | 화수 → 아크명 매핑 함수 | 소설 구조에 따라 |
 | `ARC_BOUNDARIES` | 아크 종료 화수 (종료 점검 트리거) | `(100 200 300)` |
-| `USE_GEMINI` | Gemini CLI 편집 리뷰 사용 여부 | `true` / `false` |
+| `USE_EXTERNAL_FEEDBACK` | 외부 AI 피드백 에이전트 사용 여부 (Gemini/NIM/Ollama) | `true` / `false` |
 
 ### 실행
 
