@@ -86,7 +86,7 @@ git clone https://github.com/NA-DEGEN-GIRL/claude-novel-templates.git
 # 새 소설 폴더에 복사
 NEW_ID="my-novel"
 mkdir -p $NEW_ID
-cp -r claude-novel-templates/{CLAUDE.md,SETUP-GUIDE.md,GEMINI.md,settings,summaries,chapters,plot} $NEW_ID/
+cp -r claude-novel-templates/{CLAUDE.md,SETUP-GUIDE.md,settings,summaries,chapters,plot} $NEW_ID/
 mkdir -p $NEW_ID/.claude/agents
 cp -r claude-novel-templates/.claude/* $NEW_ID/.claude/
 ```
@@ -166,7 +166,7 @@ templates/ 폴더를 참고해서 새 소설을 만들어줘.
 ```
 my-novel/
 ├── CLAUDE.md                  ← 집필 헌법 (최상위 규칙)
-├── GEMINI.md                  ← Gemini 편집자 지시문
+├── (GEMINI.md는 novel-editor MCP 서버에 번들)
 ├── SETUP-GUIDE.md             ← 셋업 가이드
 ├── settings/                  ← 세계관·캐릭터·규칙
 │   ├── 01-style-guide.md
@@ -259,7 +259,7 @@ AI가 100화 넘게 써도 캐릭터 상태, 관계, 복선을 잊지 않도록 
 
 ## 외부 AI 편집자 연동
 
-Claude가 쓴 원고를 외부 AI가 편집 리뷰한다. [GEMINI.md](./GEMINI.md)가 편집 지시문이다.
+Claude가 쓴 원고를 외부 AI가 편집 리뷰한다. 편집 지시문(GEMINI.md)은 `novel-editor` MCP 서버에 번들되어 자동 적용된다.
 
 ### 동작 방식
 
@@ -536,7 +536,7 @@ kill $(pgrep -f batch-write)
 6. [ ] `settings/05-continuity.md` — EPISODE_META 형식 커스터마이징
 7. [ ] `CLAUDE.md` 섹션 9 — 호칭/어투 매트릭스 작성
 8. [ ] (선택) `settings/06-humor-guide.md` — 러닝 개그 등록
-9. [ ] (선택) `GEMINI.md` — 장르별 편집 지침 추가
+9. [ ] (선택) `mcp-novel-editor/GEMINI.md` — 장르별 편집 지침 커스터마이징 (MCP 서버 번들)
 
 ---
 

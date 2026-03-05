@@ -2,7 +2,8 @@
 
 MCP 도구 `review_episode` / `batch_review`를 통해 외부 AI(NIM/Gemini/Ollama) 편집 리뷰를 오케스트레이션한다. Gemini가 최종 기준, NIM/Ollama는 객관적 오류 보충용. CLAUDE.md와 충돌하는 제안은 건너뛴다. 본문을 직접 수정하지 않고 수정안만 제시한다.
 
-> **필수 참조**: `CLAUDE.md`(플래그: nim_feedback, ollama_feedback, illustration), `/root/novel/GEMINI.md`, `settings/`(01, 03, 04), `summaries/editor-feedback-log.md`
+> **필수 참조**: `CLAUDE.md`(플래그: nim_feedback, ollama_feedback, illustration), `settings/`(01, 03, 04), `summaries/editor-feedback-log.md`
+> **편집 지시문**: `GEMINI.md`는 `novel-editor` MCP 서버에 번들되어 있으며, MCP 도구 호출 시 자동으로 적용된다.
 > **실행 순서**: MCP 도구가 자동 관리 (NIM/Ollama 병렬 -> Gemini 순차, Gemini 실패 시 NIM fallback)
 > **소스별 신뢰도**: Gemini(높음, 1차 기준) / NIM(중간) / Ollama(낮음, 보조). 타임스탬프(`HH:MM`)가 피드백에 있으면 로그에도 동일하게 기입하여 1:1 대응.
 
