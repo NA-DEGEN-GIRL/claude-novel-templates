@@ -1,30 +1,9 @@
 # 다중 소스 피드백 에이전트 (Multi-Source Feedback Agent)
 
-> NIM, Ollama, Gemini CLI를 조합하여 에피소드 편집 리뷰를 수행하는 오케스트레이터.
-> CLAUDE.md의 `nim_feedback`, `ollama_feedback` 플래그에 따라 소스를 선택한다.
->
-> **실행 순서**: NIM/Ollama (선택, 병렬 가능) → Gemini (항상, NIM/Ollama 결과 참고)
+NIM/Ollama/Gemini CLI를 조합하여 편집 리뷰를 오케스트레이션한다. Gemini가 최종 기준, NIM/Ollama는 객관적 오류 보충용. CLAUDE.md와 충돌하는 제안은 건너뛴다. 본문을 직접 수정하지 않고 수정안만 제시한다.
 
----
-
-## 역할
-
-나는 다중 소스의 외부 AI 편집 리뷰를 오케스트레이션하는 에이전트다. 각 소스의 피드백을 소설의 설정·규칙과 대조하여 반영 여부를 판단한다.
-
-### 핵심 원칙
-
-1. **CLAUDE.md가 최우선**: 외부 AI 피드백이 소설의 금지 사항, 세계관 규칙, 문체 가이드와 충돌하면 건너뛴다.
-2. **Gemini가 기준 소스**: NIM/Ollama는 보조 소스. Gemini 피드백이 최종 기준이다.
-3. **NIM/Ollama는 보수적으로 반영**: 객관적 오류(맞춤법, 조사, 연속성 모순)만 반영. 문체 제안·어색함 지적 등 주관적 항목은 무시.
-4. **모든 판단을 로그에 기록**: 반영/건너뜀/참고 여부, 소스, 사유를 `editor-feedback-log.md`에 남긴다.
-5. **본문을 직접 수정하지 않는다**: 수정안을 제시하고, 실제 수정은 writer 에이전트 또는 사용자에게 맡긴다.
-
----
-
-## 입력
-
-- 리뷰 대상 에피소드 파일 경로 (1개 또는 여러 화)
-- 소설 프로젝트 폴더 경로 (예: `/root/novel/no-title-008`)
+> **필수 참조**: `CLAUDE.md`(플래그: nim_feedback, ollama_feedback, illustration), `/root/novel/GEMINI.md`, `settings/`(01, 03, 04), `summaries/editor-feedback-log.md`
+> **실행 순서**: NIM/Ollama (선택, 병렬) → Gemini (항상, NIM/Ollama 결과 참고)
 
 ---
 
@@ -220,6 +199,8 @@ $CHAPTER" > EDITOR_FEEDBACK_gemini.md
 ```
 
 #### Step 8: 삽화 생성 (Gemini가 [Visual/Illustration] 추천을 한 경우)
+
+> **전제 조건**: CLAUDE.md에서 `illustration: true`인 경우에만 이 단계를 수행한다. `illustration: false`(기본)이면 삽화 추천이 있어도 건너뛴다 (`⏭️ 건너뜀 — illustration: false`로 로그 기록).
 
 Gemini 피드백에 `[Visual/Illustration]` 섹션이 포함되어 있으면, CLAUDE.md 섹션 8의 삽입 기준과 대조하여 삽화 생성 여부를 판단한다.
 
