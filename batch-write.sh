@@ -164,24 +164,21 @@ ${boundary}화(아크 종료) 완료 후:
     log "claude 실행 중 (${batch_start}~${batch_end}화)..."
     echo "===== [$(date '+%H:%M:%S')] 배치 ${batch_start}~${batch_end}화 시작 =====" >> "$DETAIL_LOG"
 
-    # claude 출력을 상세 로그에 기록하면서, 파일 생성을 백그라운드로 감시
-    (
-        while true; do
-            sleep 30
-            for (( ep=batch_start; ep<=batch_end; ep++ )); do
-                ep_arc=$(get_arc "$ep")
-                ep_file="chapters/${ep_arc}/chapter-$(printf '%02d' "$ep").md"
-                if [ -f "$ep_file" ]; then
-                    size=$(wc -c < "$ep_file")
-                    echo "[$(date '+%H:%M:%S')] ${ep}화 감지 (${size} bytes)" >> "$DETAIL_LOG"
-                fi
-            done
-        done
-    ) &
-    MONITOR_PID=$!
-
-    if claude -p "$PROMPT" >> "$DETAIL_LOG" 2>&1; then
-        kill "$MONITOR_PID" 2>/dev/null; wait "$MONITOR_PID" 2>/dev/null
+    # claude의 stream-json 출력을 실시간 파싱하여 상세 로그에 기록
+    # tail -f batch-write-detail.log 로 AI 작업 과정을 실시간 확인 가능
+    if claude -p --verbose --output-format stream-json "$PROMPT" 2>&1 | \
+        jq --unbuffered -r '
+        if .type == "assistant" then
+          (.message.content[]? |
+            if .type == "text" then "[" + (now | strftime("%H:%M:%S")) + "] 💬 " + .text
+            elif .type == "tool_use" then "[" + (now | strftime("%H:%M:%S")) + "] 🔧 " + .name + " → " + (.input | tostring | .[0:120])
+            else empty end)
+        elif .type == "tool_result" then
+          "  ↳ " + (.content | tostring | .[0:200])
+        elif .type == "result" then
+          "[" + (now | strftime("%H:%M:%S")) + "] ✅ 완료 (" + ((.duration_ms // 0) / 1000 | tostring) + "s, " + ((.total_cost_usd // 0) * 100 | round | tostring) + "¢)"
+        else empty end
+        ' >> "$DETAIL_LOG" 2>/dev/null; then
         # 실제 파일 생성 여부 검증 (claude -p가 exit 0이어도 내부 에러로 파일 미생성 가능)
         missing=()
         created=()
@@ -203,7 +200,6 @@ ${boundary}화(아크 종료) 완료 후:
         log "배치 ${batch_start}~${batch_end}화 완료: ${created[*]}"
     else
         EXIT_CODE=$?
-        kill "$MONITOR_PID" 2>/dev/null; wait "$MONITOR_PID" 2>/dev/null
         log "ERROR: 배치 ${batch_start}~${batch_end}화 실패 (exit code: ${EXIT_CODE})"
         log "재시작: cd ${NOVEL_DIR} && bash batch-write.sh $((batch_start)) ${END}"
         exit 1
