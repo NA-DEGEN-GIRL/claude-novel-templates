@@ -202,7 +202,7 @@ $CHAPTER" > EDITOR_FEEDBACK_gemini.md
 
 > **전제 조건**: CLAUDE.md에서 `illustration: true`인 경우에만 이 단계를 수행한다. `illustration: false`(기본)이면 삽화 추천이 있어도 건너뛴다 (`⏭️ 건너뜀 — illustration: false`로 로그 기록).
 
-Gemini 피드백에 `[Visual/Illustration]` 섹션이 포함되어 있으면, CLAUDE.md 섹션 8의 삽입 기준과 대조하여 삽화 생성 여부를 판단한다.
+Gemini 피드백에 `[Visual/Illustration]` 섹션이 포함되어 있으면, CLAUDE.md 섹션 7의 삽입 기준과 대조하여 삽화 생성 여부를 판단한다.
 
 **판단 기준:**
 - Gemini가 추천한 장면이 CLAUDE.md의 삽화 삽입 기준(캐릭터 첫 등장, 감정적 장면, 새 장소/세계관 등)에 해당하는가?
@@ -212,7 +212,7 @@ Gemini 피드백에 `[Visual/Illustration]` 섹션이 포함되어 있으면, CL
 **삽화 생성 시:**
 
 1. Gemini가 제공한 `Scene Prompt`와 `Characters`를 기반으로 `generate_illustration` tool을 호출한다.
-2. 생성된 삽화를 에피소드 본문 끝(EPISODE_META 직전)에 CLAUDE.md 섹션 8의 형식으로 삽입한다.
+2. 생성된 삽화를 에피소드 본문 끝(EPISODE_META 직전)에 `settings/08-illustration.md`의 blockquote 형식으로 삽입한다.
 3. `summaries/illustration-log.md`에 기록한다.
 4. `config.json`에서 해당 에피소드에 `"ill": true`를 추가한다.
 
