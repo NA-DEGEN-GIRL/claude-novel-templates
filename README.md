@@ -68,6 +68,7 @@ python server.py  # localhost:8082에서 실행
 |----------|------|------|
 | **novel-calc** | 날짜 계산, 전통 단위 변환, 화폐 계산, 이동 시간 추정 등 | [mcp-novel-calc](https://github.com/NA-DEGEN-GIRL/mcp-novel-calc) |
 | **novel-hanja** | 한자어 검색, 검증, 작명 보조 | [mcp-novel-hanja](https://github.com/NA-DEGEN-GIRL/mcp-novel-hanja) |
+| **novel-editor** | 외부 AI(Gemini/NIM/Ollama) 편집 리뷰 오케스트레이션 | [mcp-novel-editor](https://github.com/NA-DEGEN-GIRL/mcp-novel-editor) |
 | **novelai-image** | 캐릭터/삽화/표지 이미지 자동 생성 (NovelAI API) | [mcp-novelai-image](https://github.com/NA-DEGEN-GIRL/mcp-novelai-image) |
 
 MCP 서버 없이도 템플릿 자체는 동작한다. 다만 AI가 수치와 한자를 자체 추론하게 되므로 정확도가 떨어질 수 있다.
@@ -262,22 +263,33 @@ Claude가 쓴 원고를 외부 AI가 편집 리뷰한다. [GEMINI.md](./GEMINI.m
 
 ### 동작 방식
 
+`novel-editor` MCP 서버가 설치되어 있으면, `gemini-feedback` 에이전트가 단일 MCP 도구 호출로 전체 파이프라인을 실행한다:
+
 ```
 writer 집필 완료
   │
-  ├─ Gemini CLI 호출 ─── 성공 → EDITOR_FEEDBACK.md 작성
-  │                   └─ 실패 → NIM Proxy fallback
-  │                                └─ 성공 → EDITOR_FEEDBACK.md 작성
-  │                                └─ 실패 → 건너뜀 (집필은 계속)
-  │
-  └─ Claude가 피드백 평가 → 반영 / 참고 / 건너뜀
+  └─ gemini-feedback 에이전트
+       │
+       └─ review_episode() MCP 호출
+            │
+            ├─ Phase 1: NIM + Ollama (병렬, 플래그에 따라)
+            │     └─ EDITOR_FEEDBACK_nim.md / _ollama.md 저장
+            │
+            ├─ Phase 2: Gemini CLI (NIM/Ollama 결과 참고)
+            │     └─ 성공 → EDITOR_FEEDBACK_gemini.md 저장
+            │     └─ 실패 → NIM Proxy fallback
+            │
+            └─ Claude가 피드백 평가 → 반영 / 참고 / 건너뜀
 ```
 
 1. writer가 집필 완료 후 `gemini-feedback` 에이전트를 호출
-2. **1순위**: Gemini CLI가 에피소드를 분석하고 `EDITOR_FEEDBACK.md`에 피드백 작성
-3. **2순위**: Gemini 실패 시 NIM Proxy를 통해 Mistral Large 3 등 오픈소스 모델로 리뷰
-4. Claude가 피드백을 평가하여 반영/참고/건너뜀 결정
-5. `CLAUDE.md`(소설 규칙)와 충돌하는 제안은 자동으로 건너뜀
+2. 에이전트가 `review_episode` MCP 도구를 호출 (NIM/Ollama/Gemini 전체 오케스트레이션)
+3. CLAUDE.md의 플래그(`nim_feedback`, `ollama_feedback`)에 따라 활성 소스 자동 결정
+4. Gemini 실패 시 NIM Proxy로 자동 fallback
+5. Claude가 피드백을 평가하여 반영/참고/건너뜀 결정
+6. `CLAUDE.md`(소설 규칙)와 충돌하는 제안은 자동으로 건너뜀
+
+> MCP 서버 없이도 Bash 명령으로 직접 호출하는 방식이 가능하지만, 오픈소스 모델(NIM Proxy 기반)이 집필 AI인 경우 복잡한 Bash 구성을 건너뛸 수 있다. MCP 도구는 모든 AI 모델이 안정적으로 호출하므로 구조적으로 더 안정적이다.
 
 ### 외부 AI가 체크하는 것
 
@@ -325,6 +337,18 @@ AI가 수치를 암산하면 틀린다. MCP 서버로 정확한 계산을 보장
 | `hanja_search` | 한글 음으로 한자 검색 |
 | `hanja_meaning` | 의미 키워드로 한자 탐색 |
 | `hanja_verify` | 한자어 존재 여부 + 소설 내 중복 체크 |
+
+### novel-editor ([레포](https://github.com/NA-DEGEN-GIRL/mcp-novel-editor))
+
+외부 AI(Gemini CLI, NIM Proxy, Ollama)를 MCP 도구로 호출하여 편집 리뷰를 오케스트레이션한다. AI가 복잡한 Bash 명령을 구성하는 대신, 단일 MCP 호출로 NIM/Ollama 병렬 실행 -> Gemini 순차 실행 -> 자동 fallback까지 처리한다.
+
+| 도구 | 용도 |
+|------|------|
+| `review_episode` | 단건 에피소드 편집 리뷰 (NIM+Ollama 병렬 -> Gemini 순차) |
+| `batch_review` | 여러 에피소드 일괄 리뷰 (범위 또는 파일 목록) |
+| `check_status` | 외부 AI 서비스 상태 확인 |
+
+> 특히 NIM Proxy 기반 오픈소스 모델을 집필 AI로 사용할 때 유용하다. 오픈소스 모델은 복잡한 Bash 명령(curl + jq + 파이프라인)을 건너뛰는 경향이 있지만, MCP 도구는 안정적으로 호출한다.
 
 ### novelai-image ([레포](https://github.com/NA-DEGEN-GIRL/mcp-novelai-image))
 
