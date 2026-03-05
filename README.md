@@ -90,7 +90,17 @@ mkdir -p $NEW_ID/.claude/agents
 cp -r claude-novel-templates/.claude/* $NEW_ID/.claude/
 ```
 
-### 2. 설정 커스터마이징
+### 2. 권한 설정
+
+`settings.local.json`은 `claude -p`(배치 실행)에 필수다. 예시 파일을 복사한다:
+
+```bash
+cp $NEW_ID/.claude/settings.local.example.json $NEW_ID/.claude/settings.local.json
+```
+
+NIM Proxy를 메인 집필 AI로 사용하려면 `env` 섹션을 추가한다 (아래 "배치 자동 집필 > 권한 설정" 참조).
+
+### 3. 설정 커스터마이징
 
 `CLAUDE.md`의 `{{PLACEHOLDER}}`를 실제 값으로 채운다:
 
@@ -103,7 +113,7 @@ cp -r claude-novel-templates/.claude/* $NEW_ID/.claude/
 | `{{TARGET_LENGTH}}` | 에피소드 목표 분량 | 4000~6000자 |
 | `{{PROMISE_1~3}}` | 작품의 핵심 약속 | |
 
-### 3. 세계관·캐릭터 설정
+### 4. 세계관·캐릭터 설정
 
 `settings/` 폴더의 파일들을 작성한다:
 
@@ -118,7 +128,7 @@ settings/
 
 > 각 파일에 가이드와 예시가 포함되어 있다. 자기 소설에 맞게 수정하면 된다.
 
-### 4. 집필 시작
+### 5. 집필 시작
 
 ```bash
 cd my-novel && claude
@@ -175,7 +185,8 @@ my-novel/
 │   ├── illustration-log.md        삽화 기록
 │   └── arc-summaries/             아크 요약 보관
 └── .claude/
-    ├── settings.local.json    ← Claude Code 권한 설정
+    ├── settings.local.json         ← Claude Code 권한 설정 (gitignore 대상)
+    ├── settings.local.example.json ← 권한 설정 예시 (복사하여 사용)
     └── agents/                ← 전문 에이전트 9종
         ├── writer.md
         ├── reviewer.md
@@ -354,6 +365,52 @@ NovelAI API로 캐릭터/삽화/표지를 자동 생성한다. `character-prompt
 ```bash
 cp batch-write.sh my-novel/batch-write.sh
 ```
+
+#### 권한 설정 (중요)
+
+`claude -p`(비대화형 모드)에서는 도구 사용 시 **사용자 승인을 받을 수 없다**. `.claude/settings.local.json`에 필요한 도구를 미리 허용해야 배치가 정상 동작한다.
+
+템플릿의 `.claude/settings.local.json`에는 기본 권한이 포함되어 있다:
+
+```json
+{
+  "permissions": {
+    "allow": [
+      "Bash(*)",
+      "Read(*)",
+      "Write(*)",
+      "Edit(*)",
+      "Glob(*)",
+      "Grep(*)",
+      "mcp__novel-calc__*",
+      "mcp__novel-hanja__*",
+      "mcp__novelai-image__generate_image",
+      "mcp__novelai-image__generate_character",
+      "mcp__novelai-image__list_characters",
+      "mcp__novelai-image__generate_illustration",
+      "mcp__novelai-image__generate_cover"
+    ]
+  }
+}
+```
+
+> **`Edit(*)`, `Glob(*)`, `Grep(*)`가 빠지면 배치가 실패한다.** `claude -p`가 에러를 발생시키지만 exit code 0을 반환하여, 로그에는 "완료"로 표시되면서 실제 파일은 생성되지 않는 현상이 발생한다. 배치 스크립트에 파일 생성 검증 로직이 포함되어 있으므로, 이 경우 `ERROR: claude 성공 반환이나 파일 미생성` 메시지와 함께 중단된다.
+
+NIM Proxy를 메인 집필 AI로 사용하는 경우, `env` 섹션을 추가한다:
+
+```json
+{
+  "permissions": { "allow": ["..."] },
+  "env": {
+    "ANTHROPIC_BASE_URL": "http://localhost:8082",
+    "ANTHROPIC_AUTH_TOKEN": "dummy-token",
+    "ANTHROPIC_API_KEY": "",
+    "API_TIMEOUT_MS": "600000"
+  }
+}
+```
+
+#### 변수 커스터마이징
 
 스크립트 상단의 변수를 본인 소설에 맞게 수정한다. **직접 수정하거나**, Claude Code에게 맡길 수 있다:
 
