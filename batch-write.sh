@@ -162,7 +162,21 @@ ${boundary}화(아크 종료) 완료 후:
     log "claude 실행 중 (${batch_start}~${batch_end}화)..."
 
     if claude -p "$PROMPT" >> "$LOG_FILE" 2>&1; then
-        log "배치 ${batch_start}~${batch_end}화 완료"
+        # 실제 파일 생성 여부 검증 (claude -p가 exit 0이어도 내부 에러로 파일 미생성 가능)
+        missing=()
+        for (( ep=batch_start; ep<=batch_end; ep++ )); do
+            ep_arc=$(get_arc "$ep")
+            ep_file="chapters/${ep_arc}/chapter-$(printf '%02d' "$ep").md"
+            if [ ! -f "$ep_file" ]; then
+                missing+=("${ep}화")
+            fi
+        done
+        if [ ${#missing[@]} -gt 0 ]; then
+            log "ERROR: claude 성공 반환이나 파일 미생성: ${missing[*]}"
+            log "재시작: cd ${NOVEL_DIR} && bash batch-write.sh $((batch_start)) ${END}"
+            exit 1
+        fi
+        log "배치 ${batch_start}~${batch_end}화 완료 (파일 검증 통과)"
     else
         EXIT_CODE=$?
         log "ERROR: 배치 ${batch_start}~${batch_end}화 실패 (exit code: ${EXIT_CODE})"
