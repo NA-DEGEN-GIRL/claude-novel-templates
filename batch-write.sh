@@ -166,7 +166,7 @@ ${boundary}화(아크 종료) 완료 후:
 
     # claude의 stream-json 출력을 실시간 파싱하여 상세 로그에 기록
     # tail -f batch-write-detail.log 로 AI 작업 과정을 실시간 확인 가능
-    if claude -p --verbose --output-format stream-json "$PROMPT" 2>&1 | \
+    if claude -p --verbose --output-format stream-json "$PROMPT" 2>> "$DETAIL_LOG" | \
         jq --unbuffered -r '
         if .type == "assistant" then
           (.message.content[]? |
