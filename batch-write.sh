@@ -162,23 +162,8 @@ ${boundary}화(아크 종료) 완료 후:
     done
 
     log "claude 실행 중 (${batch_start}~${batch_end}화)..."
-    echo "===== [$(date '+%H:%M:%S')] 배치 ${batch_start}~${batch_end}화 시작 =====" >> "$DETAIL_LOG"
 
-    # claude의 stream-json 출력을 실시간 파싱하여 상세 로그에 기록
-    # tail -f batch-write-detail.log 로 AI 작업 과정을 실시간 확인 가능
-    if claude -p --verbose --output-format stream-json "$PROMPT" 2>> "$DETAIL_LOG" | \
-        jq --unbuffered -r '
-        if .type == "assistant" then
-          (.message.content[]? |
-            if .type == "text" then "[" + (now | strftime("%H:%M:%S")) + "] 💬 " + .text
-            elif .type == "tool_use" then "[" + (now | strftime("%H:%M:%S")) + "] 🔧 " + .name + " → " + (.input | tostring | .[0:120])
-            else empty end)
-        elif .type == "tool_result" then
-          "  ↳ " + (.content | tostring | .[0:200])
-        elif .type == "result" then
-          "[" + (now | strftime("%H:%M:%S")) + "] ✅ 완료 (" + ((.duration_ms // 0) / 1000 | tostring) + "s, " + ((.total_cost_usd // 0) * 100 | round | tostring) + "¢)"
-        else empty end
-        ' >> "$DETAIL_LOG" 2>/dev/null; then
+    if claude -p "$PROMPT" >> "$DETAIL_LOG" 2>&1; then
         # 실제 파일 생성 여부 검증 (claude -p가 exit 0이어도 내부 에러로 파일 미생성 가능)
         missing=()
         created=()
