@@ -164,7 +164,7 @@ ${boundary}화(아크 종료) 완료 후:
     log "claude 실행 중 (${batch_start}~${batch_end}화)..."
     echo "===== [$(date '+%H:%M:%S')] 배치 ${batch_start}~${batch_end}화 시작 =====" >> "$DETAIL_LOG"
 
-    if claude -p --verbose --output-format stream-json "$PROMPT" | \
+    if stdbuf -oL claude -p --verbose --output-format stream-json "$PROMPT" | \
         jq --unbuffered -r '
         if .type == "assistant" then
           (.message.content[]? |
