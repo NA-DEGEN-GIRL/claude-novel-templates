@@ -329,6 +329,83 @@ NovelAI API로 캐릭터/삽화/표지를 자동 생성한다. `character-prompt
 
 ---
 
+## 배치 자동 집필
+
+`batch-write.sh`를 사용하면 수십~수백 화를 **자동으로 연속 집필**할 수 있다.
+
+### 원리
+
+`claude -p`를 5화 단위로 반복 호출한다. 각 배치는 독립된 세션에서 실행되며, **요약 파일(running-context, character-tracker 등)을 통해 맥락을 이어받는다**. compact(컨텍스트 자동 압축)와 실질적으로 동일하지만, 실패 복구가 쉽고 백그라운드 실행이 가능하다.
+
+### 각 배치에서 하는 일
+
+매 화마다 CLAUDE.md에 정의된 전체 워크플로를 수행한다:
+
+```
+사전 읽기 → 개요 → 초고 → 자가 검증 → 요약 갱신 → EPISODE_META
+→ 에이전트 리뷰 (continuity-checker + reviewer + gemini-feedback)
+→ 수정 반영 + 한글 교정 → 피드백 로그 → config.json 등록 → 커밋
+```
+
+### 설정 방법
+
+스크립트 상단의 변수를 본인 소설에 맞게 수정한다. **직접 수정하거나**, Claude Code에게 맡길 수 있다:
+
+```
+batch-write.sh를 내 소설에 맞게 수정해줘.
+CLAUDE.md와 plot/ 구조를 참고해서 아크 매핑, 시작/종료 화수,
+아크 전환 지점을 자동으로 설정해.
+```
+
+수정이 필요한 변수:
+
+| 변수 | 설명 | 예시 |
+|------|------|------|
+| `NOVEL_ID` | 소설 폴더명 | `"no-title-001"` |
+| `PROJECT_DIR` | 프로젝트 루트 경로 | `"/root/novel"` |
+| `DEFAULT_START` / `DEFAULT_END` | 기본 집필 범위 | `1` / `400` |
+| `get_arc()` | 화수 → 아크명 매핑 함수 | 소설 구조에 따라 |
+| `ARC_BOUNDARIES` | 아크 종료 화수 (종료 점검 트리거) | `(100 200 300)` |
+| `USE_GEMINI` | Gemini CLI 편집 리뷰 사용 여부 | `true` / `false` |
+
+### 실행
+
+```bash
+# 전체 범위 실행
+bash batch-write.sh
+
+# 특정 범위만
+bash batch-write.sh 50 100
+
+# 백그라운드 실행 (터미널 닫아도 계속)
+nohup bash batch-write.sh &
+
+# 실패 후 이어가기 (로그에서 마지막 성공 지점 확인)
+bash batch-write.sh 73 200
+```
+
+### 모니터링
+
+```bash
+# 진행 상황 확인
+tail -20 batch-write-no-title-XXX.log
+
+# 실시간 모니터링
+tail -f batch-write-no-title-XXX.log
+
+# 중단
+kill $(pgrep -f batch-write)
+```
+
+### 자동 처리 포인트
+
+- **플롯 자동 생성**: 해당 아크의 플롯 파일이 없으면 자동으로 생성한 뒤 집필 시작
+- **정기 점검**: 5화마다 CLAUDE.md의 정기 점검 항목 수행 (요약 정합성, 복선 시한, 캐릭터 드리프트 등)
+- **아크 전환 점검**: `ARC_BOUNDARIES`에 정의된 화수에서 아크 종료 점검 자동 수행
+- **실패 복구**: 에러 발생 시 해당 배치에서 멈추고 로그에 재시작 명령어를 출력
+
+---
+
 ## 장르별 참고
 
 ### 무협/판타지
