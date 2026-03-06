@@ -6,6 +6,20 @@ Claude Code가 tmux 세션을 주기적으로 확인하며, 또 다른 Claude Co
 > bash 스크립트(파일 존재/타임아웃 기반)는 AI의 실제 상태를 판단할 수 없다.
 > Claude Code가 직접 tmux 화면을 읽고 맥락을 파악하면 정확한 판단이 가능하다.
 
+## 실행 구조
+
+```
+/root/novel/                    ← 감독자 Claude Code 실행 위치
+├── no-title-XXX/               ← 집필자가 작업하는 소설 폴더
+│   ├── batch-supervisor.md     ← 이 파일 (감독 규칙)
+│   └── ...
+```
+
+- **감독자**: `/root/novel/`(상위 폴더)에서 Claude Code를 열고 이 프롬프트를 입력한다.
+  - 상위 폴더의 CLAUDE.md(프로젝트 가이드)를 읽으므로 config.json 관리 등 전체 맥락을 파악할 수 있다.
+- **집필자**: tmux 세션 안에서 소설 폴더(`no-title-XXX/`)로 이동한 뒤 `claude`를 실행한다.
+  - 소설 폴더의 CLAUDE.md(집필 헌법)를 읽으므로 해당 소설의 규칙을 정확히 따른다.
+
 ---
 
 ## 설정 변수
@@ -20,7 +34,16 @@ Claude Code가 tmux 세션을 주기적으로 확인하며, 또 다른 Claude Co
 | `START_EP` | 시작 화수 | `1` |
 | `END_EP` | 종료 화수 | `70` |
 | `CHUNK_SIZE` | /clear 주기 (화 단위) | `10` |
-| `ARC_MAP` | 아크-화수 매핑 (JSON) | 아래 참조 |
+| `WRITER_CMD` | 집필자 실행 명령 | `claude` (기본) |
+| `ARC_MAP` | 아크-화수 매핑 | 아래 참조 |
+
+### WRITER_CMD 예시
+
+| 값 | 설명 |
+|----|------|
+| `claude` | 기본 Claude Code (소설 폴더의 CLAUDE.md를 자동 로드) |
+| `claude --model claude-sonnet-4-6` | 특정 모델 지정 |
+| `claude --model gpt-oss:120b` | NIM 프록시 경유 모델 |
 
 ### ARC_MAP 예시
 
@@ -28,11 +51,7 @@ Claude Code가 tmux 세션을 주기적으로 확인하며, 또 다른 Claude Co
 {
   "arc-01": [1, 10],
   "arc-02": [11, 20],
-  "arc-03": [21, 30],
-  "arc-04": [31, 40],
-  "arc-05": [41, 50],
-  "arc-06": [51, 55],
-  "arc-07": [56, 70]
+  "arc-03": [21, 30]
 }
 ```
 
@@ -41,7 +60,9 @@ Claude Code가 tmux 세션을 주기적으로 확인하며, 또 다른 Claude Co
 ## 사용법
 
 ```bash
-cd {{NOVEL_DIR}}
+# 감독자는 상위 폴더에서 실행
+cd /root/novel
+claude
 ```
 
 아래 프롬프트를 Claude Code에 입력:
@@ -55,7 +76,7 @@ cd {{NOVEL_DIR}}
 ### 1. 세션 관리
 
 - tmux 세션명: `{{SESSION}}`
-- **세션이 없으면**: `tmux new-session -d -s {{SESSION}} -x 220 -y 50` 으로 생성하고, `tmux send-keys -t {{SESSION}} 'cd {{NOVEL_DIR}} && unset CLAUDECODE && claude' Enter` 실행
+- **세션이 없으면**: `tmux new-session -d -s {{SESSION}} -x 220 -y 50` 으로 생성하고, `tmux send-keys -t {{SESSION}} 'cd {{NOVEL_DIR}} && unset CLAUDECODE && {{WRITER_CMD}}' Enter` 실행
 - **세션이 있으면**: 화면을 캡처하여 현재 상태를 파악하고 이어서 진행
 - **세션 크기**: 220x50 이상으로 설정해야 capture-pane에서 잘리지 않는다
 
@@ -67,7 +88,7 @@ cd {{NOVEL_DIR}}
 
 화수 N이 주어지면 이 매핑에서 해당 아크와 zero-padded 파일명을 결정한다:
 - 아크: N이 포함된 범위의 키
-- 파일: `chapters/{arc}/chapter-{NN}.md` (NN = zero-padded 2자리)
+- 파일: `chapters/{arc}/chapter-{NN}.md` (NN = zero-padded 2자리 또는 3자리, 100화 이상이면 3자리)
 
 ### 3. 집필 프롬프트
 
@@ -79,7 +100,7 @@ cd {{NOVEL_DIR}}
 - .claude/agents/writer.md의 자율 집필 마스터 체크리스트(A~G)를 빠짐없이 수행한다.
 - 플롯: plot/{arc}.md 참조
 - 집필 전 summaries/running-context.md를 다시 읽어 현재 상태를 확인한다.
-- 파일명: chapters/{arc}/chapter-{NN}.md (zero-padded 2자리)
+- 파일명: chapters/{arc}/chapter-{NN}.md
 [리뷰]
 1. reviewer, continuity-checker 에이전트 실행
 2. mcp__novel_editor__review_episode(episode_file="{{NOVEL_DIR}}/chapters/{arc}/chapter-{NN}.md", novel_dir="{{NOVEL_DIR}}", sources="auto") 호출
@@ -135,7 +156,7 @@ tmux capture-pane -t {{SESSION}} -p -S -50
 | **MCP 연결 실패** | `MCP`, `connection`, `timeout`, `ECONNREFUSED` 등 | `/mcp` 명령으로 재연결 시도. 반복 실패 시 세션 재시작 |
 | **무한 루프** | 동일 작업이 3회 이상 반복되거나, 10분 이상 같은 화에서 진전 없음 | `/clear` 후 풀 프롬프트로 재시작 |
 | **완료** | `> ` 프롬프트가 나타나고, 직전 출력에 집필 완료 관련 메시지 (커밋 완료, batch-progress.log 기록 등)가 있음 | 다음 화 프롬프트 전송 |
-| **비정상 종료** | `claude` 프로세스가 없고 bash 프롬프트(`$`)만 보임 | `unset CLAUDECODE && claude`로 재시작 |
+| **비정상 종료** | `claude` 프로세스가 없고 bash 프롬프트(`$`)만 보임 | `unset CLAUDECODE && {{WRITER_CMD}}`로 재시작 |
 
 #### 4c. 완료 판단 보강
 
@@ -228,30 +249,6 @@ tmux send-keys -t {{SESSION}} '/clear' Enter
 ### 8. 범위
 
 {{START_EP}}화부터 {{END_EP}}화까지.
-
----
-
-## 템플릿 적용 예시 (no-title-015)
-
-```
-no-title-015 소설의 배치 집필을 감독해줘. 아래 규칙대로 진행해.
-
-### 1. 세션 관리
-- tmux 세션명: write-015
-- 세션이 없으면: tmux new-session -d -s write-015 -x 220 -y 50 으로 생성하고, tmux send-keys -t write-015 'cd /root/novel/no-title-015 && unset CLAUDECODE && claude' Enter 실행
-- 세션이 있으면: 화면을 캡처하여 현재 상태를 파악하고 이어서 진행
-
-### 2. 화수-아크 매핑
-- arc-01: 1~10화
-- arc-02: 11~20화
-- arc-03: 21~30화
-- arc-04: 31~40화
-- arc-05: 41~50화
-- arc-06: 51~55화
-- arc-07: 56~70화
-
-### 3~8. (위 템플릿의 3~8번 그대로, NOVEL_DIR=/root/novel/no-title-015, SESSION=write-015, START_EP=1, END_EP=70)
-```
 
 ---
 
