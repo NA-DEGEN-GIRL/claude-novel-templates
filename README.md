@@ -166,8 +166,9 @@ templates/ 폴더를 참고해서 새 소설을 만들어줘.
 ```
 my-novel/
 ├── CLAUDE.md                  ← 집필 헌법 (최상위 규칙)
-├── (GEMINI.md는 novel-editor MCP 서버에 번들)
 ├── SETUP-GUIDE.md             ← 셋업 가이드
+├── batch-write.sh             ← 배치 자동 집필 스크립트
+├── batch-supervisor.md        ← 배치 감독 프롬프트 (tmux 방식)
 ├── settings/                  ← 세계관·캐릭터·규칙
 │   ├── 01-style-guide.md
 │   ├── 02-episode-structure.md
@@ -366,11 +367,18 @@ NovelAI API로 캐릭터/삽화/표지를 자동 생성한다. `character-prompt
 
 ## 배치 자동 집필
 
-`batch-write.sh`를 사용하면 수십~수백 화를 **자동으로 연속 집필**할 수 있다.
+수십~수백 화를 **자동으로 연속 집필**하는 두 가지 방식을 제공한다.
 
-### 원리
+| 방식 | 파일 | 특징 | 적합한 상황 |
+|------|------|------|-------------|
+| **스크립트 방식** | `batch-write.sh` | `claude -p`를 5화 단위 반복. 백그라운드 실행 가능 | 안정적 장시간 배치, NIM 프록시 모델 |
+| **감독자 방식** | `batch-supervisor.md` | Claude Code가 tmux 화면을 읽고 AI 상태를 판단 | 에러 복구 필요, 대화형 모니터링 |
 
-`claude -p`를 5화 단위로 반복 호출한다. 각 배치는 독립된 세션에서 실행되며, **요약 파일(running-context, character-tracker 등)을 통해 맥락을 이어받는다**. compact(컨텍스트 자동 압축)와 실질적으로 동일하지만, 실패 복구가 쉽고 백그라운드 실행이 가능하다.
+두 방식 모두 소설 폴더 안에 파일을 두고, **요약 파일(running-context, character-tracker 등)을 통해 맥락을 이어받는다**.
+
+### 방식 1: 스크립트 (`batch-write.sh`)
+
+`claude -p`를 5화 단위로 반복 호출한다. 각 배치는 독립된 세션에서 실행된다. compact(컨텍스트 자동 압축)와 실질적으로 동일하지만, 실패 복구가 쉽고 백그라운드 실행이 가능하다.
 
 ### NIM Proxy와 배치 조합
 
@@ -502,6 +510,70 @@ kill $(pgrep -f batch-write)
 - **정기 점검**: 5화마다 CLAUDE.md의 정기 점검 항목 수행 (요약 정합성, 복선 시한, 캐릭터 드리프트 등)
 - **아크 전환 점검**: `ARC_BOUNDARIES`에 정의된 화수에서 아크 종료 점검 자동 수행
 - **실패 복구**: 에러 발생 시 해당 배치에서 멈추고 로그에 재시작 명령어를 출력
+
+---
+
+### 방식 2: 감독자 (`batch-supervisor.md`)
+
+Claude Code가 또 다른 Claude Code의 tmux 세션을 주기적으로 확인하며 집필을 감독한다.
+
+**스크립트 방식과의 차이**: bash 스크립트는 파일 존재 여부와 타임아웃으로만 판단하지만, 감독자 방식은 Claude Code가 직접 tmux 화면을 읽고 AI의 실제 상태(작업 중, 에러, 질문, 완료 등)를 맥락적으로 판단한다.
+
+#### 실행 구조
+
+```
+/root/novel/                    <- 감독자 Claude Code (상위 폴더)
+├── no-title-XXX/               <- 집필자 Claude Code (tmux 세션)
+│   ├── batch-supervisor.md     <- 감독 규칙
+│   └── CLAUDE.md               <- 집필 헌법 (집필자가 자동 로드)
+```
+
+- **감독자**: 상위 폴더(`/root/novel/`)에서 Claude Code를 열고 프롬프트를 입력
+- **집필자**: tmux 세션 안에서 소설 폴더로 이동하여 `claude` 실행
+
+감독자가 상위 폴더에 있으므로 config.json 관리 등 전체 맥락을 파악하고, 집필자는 소설 폴더의 CLAUDE.md를 자동 로드하여 해당 소설의 규칙을 정확히 따른다.
+
+#### 사용법
+
+```bash
+# 1. batch-supervisor.md를 소설에 맞게 편집 (아크 매핑, 범위 등)
+# 2. 상위 폴더에서 감독자 실행
+cd /root/novel && claude
+# 3. batch-supervisor.md의 프롬프트를 붙여넣기
+```
+
+#### 설정 변수
+
+| 변수 | 설명 | 기본값 |
+|------|------|--------|
+| `NOVEL_ID` | 소설 폴더명 | — |
+| `SESSION` | tmux 세션명 | `write-{ID}` |
+| `WRITER_CMD` | 집필자 실행 명령 | `claude` |
+| `CHUNK_SIZE` | /clear 주기 | `10` |
+| `ARC_MAP` | 아크-화수 매핑 | 소설별 설정 |
+
+`WRITER_CMD`로 집필 모델을 지정할 수 있다:
+- `claude` — 기본 Claude Code
+- `claude --model claude-sonnet-4-6` — 특정 모델
+- `claude --model gpt-oss:120b` — NIM 프록시 경유 모델
+
+#### 감독자가 감지하는 상태 (9가지)
+
+| 상태 | 조치 |
+|------|------|
+| 작업 중 | 2분 후 재확인 |
+| 자동 압축 | 정상 동작, 2분 후 재확인 |
+| 질문하며 멈춤 | 답변 전송 |
+| 권한 요청 | 승인 전송 |
+| 에러 발생 | 원인 분석 후 복구 |
+| MCP 연결 실패 | 재연결 시도 |
+| 무한 루프 | /clear 후 재시작 |
+| 완료 | 다음 화 프롬프트 전송 |
+| 비정상 종료 | 세션 재시작 |
+
+완료 판정은 3중 확인: 프롬프트 대기 + 파일 존재 + batch-progress.log 기록.
+
+자세한 내용은 [batch-supervisor.md](./batch-supervisor.md)를 참조한다.
 
 ---
 
