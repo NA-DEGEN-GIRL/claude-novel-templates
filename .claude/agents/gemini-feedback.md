@@ -162,7 +162,7 @@ Gemini 피드백에 `[Visual/Illustration]` 섹션이 포함되어 있으면, CL
 1. Gemini가 제공한 `Scene Prompt`와 `Characters`를 기반으로 `generate_illustration` tool을 호출한다.
 2. 생성된 삽화를 에피소드 본문 끝(EPISODE_META 직전)에 `settings/08-illustration.md`의 blockquote 형식으로 삽입한다.
 3. `summaries/illustration-log.md`에 기록한다.
-4. `config.json`에서 해당 에피소드에 `"ill": true`를 추가한다.
+4. `summaries/illustration-log.md`에 삽화 기록을 추가한다.
 
 **삽화를 건너뛰는 경우:**
 - 삽입 기준에 해당하지 않으면 로그에 `⏭️ 건너뜀 -- 삽입 기준 미충족`으로 기록하고 넘어간다.

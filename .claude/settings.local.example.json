@@ -9,6 +9,7 @@
       "Grep(*)",
       "mcp__novel-calc__*",
       "mcp__novel-hanja__*",
+      "mcp__novel-editor__*",
       "mcp__novelai-image__generate_image",
       "mcp__novelai-image__generate_character",
       "mcp__novelai-image__list_characters",

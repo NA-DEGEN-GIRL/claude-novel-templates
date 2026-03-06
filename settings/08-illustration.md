@@ -6,7 +6,7 @@
 
 ## 1. 표지 이미지
 
-소설 루트에 `cover.png`(또는 `.jpg`)를 저장하고, `/root/novel/config.json`의 `cover` 필드에 경로를 등록한다.
+소설 루트에 `cover.png`(또는 `.jpg`)를 저장한다.
 
 **자동 생성**: NovelAI MCP 서버의 `generate_image` tool로 생성한다.
 - 첫 에피소드 집필 시 `cover.png`가 없으면 자동 생성
@@ -21,8 +21,7 @@
 - 권장 해상도: 832x1216 (세로형)
 
 생성 후:
-1. `config.json`의 해당 소설 `cover` 필드를 `"{{NOVEL_ID}}/cover.png"`로 업데이트한다.
-2. **사용한 프롬프트를 `cover-prompt.txt`에 저장한다** (재생성/수정 시 기준점).
+1. **사용한 프롬프트를 `cover-prompt.txt`에 저장한다** (재생성/수정 시 기준점).
 
 **`cover-prompt.txt` 형식:**
 
@@ -125,7 +124,7 @@ generate_illustration(
 
 - 이미지 경로는 `{{NOVEL_ID}}/assets/illustrations/` 하위.
 - `character-prompts.md`에 해당 캐릭터의 프롬프트가 없으면 먼저 추가한다.
-- `config.json`에서 해당 에피소드 항목에 `"ill": true` 추가 (리더에서 삽화 배지 표시용)
+- 삽화가 포함된 에피소드는 `summaries/illustration-log.md`에 기록하여 추적한다
 
 ### 삽화 추적 (필수)
 

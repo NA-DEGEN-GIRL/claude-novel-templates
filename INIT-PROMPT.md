@@ -50,7 +50,7 @@ claude-novel-templates/ 를 참고해서 새 소설 프로젝트를 만들어줘
 을 정리해서 보여줘. 내가 OK하면 3단계로.
 
 ### 3단계: 프로젝트 생성
-claude-novel-templates/의 SETUP-GUIDE.md 절차대로 전체 파일을 생성해줘:
+claude-novel-templates/의 SETUP-GUIDE.md를 참조하여 아래 체크리스트대로 전체 파일을 생성해줘:
 
 1. 소설 폴더 생성 (no-title-XXX, 다음 번호 자동 결정)
 2. 템플릿 파일 복사 (CLAUDE.md, settings/, agents/, summaries/ 등)

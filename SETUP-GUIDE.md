@@ -6,20 +6,7 @@
 
 ## 빠른 시작
 
-AI에게 아래와 같이 지시하면 된다:
-
-```
-templates/ 폴더를 참고해서 새 소설 "no-title-XXX"을 만들어줘.
-
-- 제목: [소설 제목]
-- 장르: [장르]
-- 톤: [톤앤무드]
-- 배경: [시대/세계관]
-- 주인공: [이름, 간단 설명]
-- 핵심 컨셉: [한줄 설명]
-```
-
-AI가 이 가이드를 보고 자동으로 전체 설정을 생성한다.
+[INIT-PROMPT.md](./INIT-PROMPT.md)의 프롬프트를 사용하면 AI가 이 가이드의 절차를 자동으로 수행한다.
 
 ---
 
@@ -35,10 +22,10 @@ NEW_ID="no-title-003"
 mkdir -p $NEW_ID/{settings,chapters/prologue,chapters/arc-01,plot,summaries/arc-summaries,.claude/agents}
 
 # 템플릿 복사
-cp templates/CLAUDE.md $NEW_ID/CLAUDE.md
-cp templates/settings/*.md $NEW_ID/settings/
-cp templates/.claude/agents/*.md $NEW_ID/.claude/agents/
-cp templates/.claude/settings.local.json $NEW_ID/.claude/settings.local.json
+cp claude-novel-templates/CLAUDE.md $NEW_ID/CLAUDE.md
+cp claude-novel-templates/settings/*.md $NEW_ID/settings/
+cp claude-novel-templates/.claude/agents/*.md $NEW_ID/.claude/agents/
+cp claude-novel-templates/.claude/settings.local.example.json $NEW_ID/.claude/settings.local.json
 ```
 
 ### Step 2: CLAUDE.md 커스터마이징
@@ -67,7 +54,7 @@ cp templates/.claude/settings.local.json $NEW_ID/.claude/settings.local.json
 
 ### Step 4: config.json 등록
 
-`/root/novel/config.json`에 새 소설을 추가한다:
+`/root/novel/config.json`에 새 소설을 추가한다. 감독자 방식(`batch-supervisor.md`) 사용 시 감독자가 에피소드 등록을 자동 처리한다.
 
 ```json
 {
@@ -131,39 +118,35 @@ no-title-003/.claude/
 
 ```
 .claude/
-├── settings.local.json          ← Claude Code 권한 설정 (Bash/Read/Write 자동 허용)
+├── settings.local.json              ← Claude Code 권한 설정
 └── agents/
-    ├── writer.md                ← 집필 에이전트 (전체 파이프라인)
-    ├── reviewer.md              ← 품질 검토 에이전트 (7항목, 5점 루브릭)
-    ├── continuity-checker.md    ← 연속성 검증 에이전트 (9항목, 통과/경고/오류)
-    ├── korean-proofreader.md    ← 한글 교정 에이전트 (8항목, 맞춤법/표기법/오탈자)
-    ├── plot-planner.md          ← 플롯 설계 에이전트 (아크/비트시트/복선 타이밍)
-    └── summary-generator.md     ← 요약 생성 에이전트 (4개 파일 정밀 갱신)
+    ├── writer.md                    ← 집필 에이전트 (전체 파이프라인)
+    ├── reviewer.md                  ← 품질 검토 에이전트 (7항목, 5점 루브릭)
+    ├── continuity-checker.md        ← 연속성 검증 에이전트 (13항목)
+    ├── korean-proofreader.md        ← 한글 교정 에이전트 (8항목)
+    ├── gemini-feedback.md           ← 다중 소스 피드백 에이전트 (Gemini/NIM/Ollama)
+    ├── plot-planner.md              ← 플롯 설계 에이전트
+    ├── summary-generator.md         ← 요약 생성 에이전트 (7개 파일 갱신)
+    ├── summary-validator.md         ← 요약 검증 에이전트 (원문 대조)
+    └── illustration-manager.md      ← 삽화 관리 에이전트 (검증/감사/재생성)
 ```
-
-**에이전트 역할:**
-
-| 에이전트 | 역할 | 호출 시점 |
-|----------|------|-----------|
-| **writer** | 맥락 로딩 → 장면 구성 → 집필 → 자가 검증 → 요약 갱신 → 리뷰 → 수정 → 커밋. 전체 파이프라인 자동 수행. | "N화 작성해줘" |
-| **reviewer** | 문체/캐릭터/구조/엔딩훅/감정선/몰입도/복선 — 7항목 5점 루브릭 + 우선순위별 개선 제안 + 베스트 라인 선정. | writer가 자동 호출 |
-| **continuity-checker** | 위치/부상/능력/시간선/복선/말투/고유명사/사망캐릭터/감정 — 9항목 검증. 통과/경고/오류 3단계 분류. | writer가 자동 호출 |
-| **korean-proofreader** | 숫자표기/띄어쓰기/오탈자/문법/어색한표현/조사/문장부호/반복표현 — 8항목 검수. 오류/권고/참고 3단계 분류. | writer가 자동 호출 |
-| **plot-planner** | 아크 플롯 설계, 화별 비트시트, 복선 투하/회수 타이밍, 캐릭터 스크린 타임 균형. | 새 아크 시작 전, 10화마다 |
-| **summary-generator** | 에피소드 요약, running-context, 캐릭터 상태, 복선 상태 — 4개 파일 정밀 갱신. | writer의 후처리에서 호출 가능 |
 
 **자동 실행 흐름:**
 ```
 writer (전체 파이프라인)
-  ├── [집필 전] 맥락 로딩 → 장면 구성 → 본문 작성 → 자가 검증
-  ├── [후처리] 요약 갱신 (또는 summary-generator 호출)
-  ├── [리뷰] reviewer ──────────────┐
-  │                                  │
-  ├── [리뷰] continuity-checker ─────┼── 병렬 실행
-  │                                  │
-  ├── [교정] korean-proofreader ─────┘
-  ├── [수정] 오류/높음 항목 반영 → 요약 재갱신
-  └── [커밋] git add + commit
+  │
+  ├─ [Prep]     맥락 로딩 (이전 화, 설정, 연속성 파일)
+  ├─ [Plan]     장면 구성 (비트시트 기반)
+  ├─ [Write]    본문 집필 (MCP 도구로 수치·한자 검증)
+  │
+  ├─ [Review]   자체 검토 ──────────────────┐
+  ├─ [Review]   외부 AI 편집 리뷰 ──────────┤ 병렬
+  ├─ [Review]   연속성 검증 (13항목) ───────┤
+  ├─ [Review]   한글 교정 (8항목) ──────────┘
+  │
+  ├─ [Fix]     오류·높음 항목 수정 → 재검토
+  ├─ [Post]    요약 7종 갱신
+  └─ [Commit]  git commit
 ```
 
 ### Step 8: 표지 이미지 프롬프트 생성
@@ -211,9 +194,15 @@ extra digit, fewer digits, cropped, worst quality, low quality,
 normal quality, jpeg artifacts, signature, watermark, username, blurry
 ```
 
-사용자가 https://novelai.net/image 에서 이 프롬프트를 복사-붙여넣기하여 표지를 생성한다. 생성된 이미지는 `cover.jpg`(또는 `.png`)로 소설 폴더에 저장하고, config.json의 `cover` 필드를 업데이트한다.
+표지는 writer 에이전트가 첫 에피소드 집필 시 자동 생성하거나, 사용자가 직접 생성할 수 있다.
 
-### Step 9: 첫 에피소드 작성
+### Step 9: batch-supervisor.md 설정 (선택)
+
+배치 자동 집필을 사용하려면 `batch-supervisor.md`를 소설에 맞게 편집한다:
+- `NOVEL_ID`, `SESSION`, `ARC_MAP` 등 설정 변수 수정
+- `WRITER_CMD`로 집필 모델 지정 (기본: `claude`)
+
+### Step 10: 첫 에피소드 작성
 
 소설 폴더에서 새 Claude 세션을 시작하고 집필을 시작한다:
 
@@ -226,8 +215,6 @@ cd /root/novel/no-title-003 && claude
 ```
 프롤로그 1화를 작성해줘.
 ```
-
-이후 sync.py가 자동 감지하여 config.json을 업데이트하고 배포한다.
 
 ---
 

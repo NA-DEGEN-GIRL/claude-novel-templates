@@ -73,7 +73,7 @@
     └── agents/
         ├── writer.md             ← 집필 에이전트 (전체 파이프라인)
         ├── reviewer.md           ← 품질 검토 에이전트 (7항목 채점)
-        ├── continuity-checker.md ← 연속성 검증 에이전트 (12항목)
+        ├── continuity-checker.md ← 연속성 검증 에이전트 (13항목)
         ├── korean-proofreader.md ← 한글 교정 에이전트 (8항목)
         ├── plot-planner.md       ← 플롯 설계 에이전트
         ├── summary-generator.md  ← 요약 생성 에이전트

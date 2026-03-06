@@ -179,7 +179,9 @@ my-novel/
 │   ├── 02-episode-structure.md
 │   ├── 03-characters.md
 │   ├── 04-worldbuilding.md
-│   └── 05-continuity.md
+│   ├── 05-continuity.md
+│   ├── 07-periodic.md          병렬 집필 & 정기 점검
+│   └── 08-illustration.md      표지·삽화 규칙
 ├── chapters/                  ← 에피소드 원고
 │   ├── prologue/
 │   └── arc-01/
@@ -189,6 +191,7 @@ my-novel/
 │   ├── knowledge-map.md           캐릭터 정보 보유 현황
 │   ├── promise-tracker.md         약속·복선 추적
 │   ├── relationship-log.md        만남·관계 로그
+│   ├── editor-feedback-log.md     에디터 피드백 처리 로그
 │   ├── illustration-log.md        삽화 기록
 │   └── arc-summaries/             아크 요약 보관
 └── .claude/
@@ -433,6 +436,7 @@ cp batch-write.sh my-novel/batch-write.sh
       "Grep(*)",
       "mcp__novel-calc__*",
       "mcp__novel-hanja__*",
+      "mcp__novel-editor__*",
       "mcp__novelai-image__generate_image",
       "mcp__novelai-image__generate_character",
       "mcp__novelai-image__list_characters",
@@ -611,7 +615,7 @@ cd /root/novel && claude
 4. [ ] `settings/03-characters.md` — 주요 캐릭터 시트 (최소 주인공 + 2~3명)
 5. [ ] `settings/04-worldbuilding.md` — 세계관 핵심 규칙
 6. [ ] `settings/05-continuity.md` — EPISODE_META 형식 커스터마이징
-7. [ ] `CLAUDE.md` 섹션 9 — 호칭/어투 매트릭스 작성
+7. [ ] `CLAUDE.md` 섹션 8 — 호칭/어투 매트릭스 작성
 8. [ ] (선택) `settings/06-humor-guide.md` — 러닝 개그 등록
 9. [ ] (선택) `mcp-novel-editor/GEMINI.md` — 장르별 편집 지침 커스터마이징 (MCP 서버 번들)
 
