@@ -101,16 +101,21 @@
 1. 에피소드 구조(`settings/02-episode-structure.md`)에 따라 작성한다.
 2. 문체 가이드(`settings/01-style-guide.md`)를 준수한다.
 3. 목표 분량: {{TARGET_LENGTH}} (예: 4000~6000자)
-4. **숫자·날짜·시간 계산 시 반드시 `novel-calc` MCP 도구를 사용한다.** 암산/추정 금지.
-   - 날짜/요일: `date_calc`, `weekday`, `d_plus`, `date_diff`
-   - 산술/수익률: `calculate`
-   - 속도/거리/시간: `speed_distance_time`, `travel_estimate` (이동 수단 프리셋)
-   - 전통 단위(리, 장, 척, 시진, 경, 근 등): `unit_convert`
-   - 십이지시 ↔ 현대 시각: `convert_time`
-   - 화폐(냥, 전, 푼, 금): `currency_calc`
-   - 군량/보급 계산: `supply_calc`
-   - 복리/성장 계산: `growth_calc`
-   - 글자 수 확인: `char_count` (에피소드 분량 목표 체크)
+4. **`novel-calc` MCP 도구는 "서사 검증용"이다. 계산이 서사를 주도하지 않는다.**
+   - **원칙**: 먼저 문학적으로 자연스러운 표현으로 본문을 쓴다. 그 후, 서사의 수치가 물리적·논리적으로 모순이 없는지 필요한 경우에만 calc로 검증한다. calc 결과를 본문에 그대로 반영하지 않는다 — 검증 결과가 "이 이동은 불가능하다"면 서사를 조정하되, 정확한 수치를 본문에 넣지 않는다.
+   - **calc 결과의 사용처는 세 곳으로 제한한다**: (1) continuity-checker의 검증 근거, (2) summaries/ 파일 갱신, (3) 본문 내 UI/팝업 등 독자가 직접 읽는 인터페이스 내부 수치. 나레이션·대사·독백에 calc 결과를 직접 기입하지 않는다.
+   - **calc를 사용하는 경우** (검증 필요):
+     - 구체적 날짜가 플롯의 핵심일 때 (약속 기한, 시한부 이벤트 등): `date_calc`, `d_plus`, `date_diff`
+     - 이동 거리/시간이 서사적 모순을 만들 수 있을 때: `travel_estimate`
+     - 경제/보급이 서사의 핵심 갈등일 때 (군량 부족, 자금 고갈 등): `currency_calc`, `supply_calc`
+     - 분량 확인: `char_count`
+   - **calc를 사용하지 않는 경우** (문학적 표현 우선):
+     - "며칠 후", "사흘 거리", "반나절"처럼 모호한 시간 표현 — 소설에서 자연스러운 모호함이다
+     - "삼 리 너머 마을", "백여 냥" — 분위기를 위한 어림수
+     - 일상적 이동, 소소한 거래, 식사 시간 등 서사에 영향 없는 수치
+     - 전투 중 거리/속도 — 체감과 긴장감이 정밀 계산보다 중요하다
+   - **도구 목록** (필요 시 참조):
+     날짜: `date_calc`/`weekday`/`d_plus`/`date_diff` | 산술: `calculate` | 이동: `speed_distance_time`/`travel_estimate` | 단위: `unit_convert`/`convert_time` | 경제: `currency_calc`/`supply_calc`/`growth_calc` | 분량: `char_count`
 5. **한자어 작명 시 반드시 `novel-hanja` MCP 도구를 사용한다.** LLM 추론으로 한자를 조합하지 말 것.
    - 한자어 풀이: `hanja_lookup` (한자 → 음/훈/획수 분석)
    - 한글 음으로 한자 검색: `hanja_search` (음/뜻 힌트로 한자 찾기)
@@ -180,7 +185,7 @@
 | 위치 연속성 | 캐릭터가 물리적으로 이동 가능한 위치에 있는가 |
 | 부상/상태 | 이전 부상, 피로, 감정 상태가 반영되었는가 |
 | 능력/레벨 | 파워 레벨이 설정과 일치하는가 |
-| 시간선 | 시간 흐름이 자연스러운가 (`novel-calc`의 `date_diff`, `d_plus`로 검증) |
+| 시간선 | 시간 흐름이 자연스러운가 (구체적 날짜 명시 시 `novel-calc`로 검증) |
 | 대화 톤 | 캐릭터별 말투가 일관적인가 |
 | 고유명사 | 이름, 지명, 기술명 등이 정확한가 |
 | 사망 캐릭터 | 죽은 캐릭터가 재등장하지 않는가 |

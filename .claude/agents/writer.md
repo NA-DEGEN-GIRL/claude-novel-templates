@@ -112,10 +112,13 @@
 
 ### C. 집필 & 자가 검증 (Writing & Self-Review)
 
-> **MCP 도구 필수**: CLAUDE.md 3.2절의 `novel-calc`/`novel-hanja` 규칙을 전부 따른다.
-> - `novel-calc`: `date_calc`/`weekday`/`d_plus`/`date_diff`(날짜), `calculate`(산술), `speed_distance_time`/`travel_estimate`(이동), `unit_convert`/`convert_time`(단위·시각), `currency_calc`/`supply_calc`/`growth_calc`(경제·보급), `char_count`(분량 검증)
-> - `novel-hanja`: `hanja_lookup`(풀이), `hanja_search`(음 검색), `hanja_meaning`(뜻 검색), `hanja_verify`(검증·중복 체크)
-> 숫자·날짜·시간 암산 금지, LLM 한자 추론 금지.
+> **MCP 도구 사용 지침**:
+> - `novel-hanja`: 한자어 작명·병기 시 반드시 사용. LLM 한자 추론 금지.
+>   `hanja_lookup`(풀이), `hanja_search`(음 검색), `hanja_meaning`(뜻 검색), `hanja_verify`(검증·중복 체크)
+> - `novel-calc`: **서사를 먼저 쓰고, 검증이 필요할 때만 사용한다.** 계산이 집필을 주도하지 않는다.
+>   - 사용하는 경우: 플롯 핵심 날짜 검증, 장거리 이동의 물리적 타당성 확인, 경제/보급이 갈등의 핵심일 때, 분량 확인(`char_count`)
+>   - 사용하지 않는 경우: 모호한 시간 표현("며칠 후", "사흘 거리"), 분위기용 어림수("삼 리", "백여 냥"), 전투 중 거리/속도, 서사에 영향 없는 일상 수치
+>   - **금지**: calc 결과의 정밀 수치를 나레이션·대사·독백에 직접 삽입하는 것 (검증 후 모순만 수정)
 
 - [ ] 14. 본문 초고 작성 (목표 분량 범위 내)
 - [ ] 15. 자가 검증 항목 전수 점검:
