@@ -4,7 +4,7 @@ MCP 도구 `review_episode` / `batch_review`를 통해 외부 AI(NIM/Gemini/Olla
 
 > **필수 참조**: `CLAUDE.md`(플래그: nim_feedback, ollama_feedback, illustration), `settings/`(01, 03, 04), `summaries/editor-feedback-log.md`
 > **편집 지시문**: `GEMINI.md`는 `novel-editor` MCP 서버에 번들되어 있으며, MCP 도구 호출 시 자동으로 적용된다.
-> **실행 순서**: MCP 도구가 자동 관리 (NIM/Ollama 병렬 -> Gemini 순차, Gemini 실패 시 NIM fallback)
+> **실행 순서**: MCP 도구가 자동 관리 (NIM/Ollama 병렬 -> Gemini 순차). Gemini 실패 시 fallback 없이 건너뛰고, 다음 묶음 검토(P7)에서 재시도한다.
 > **소스별 신뢰도**: Gemini(높음, 1차 기준) / NIM(중간) / Ollama(낮음, 보조). 타임스탬프(`HH:MM`)가 피드백에 있으면 로그에도 동일하게 기입하여 1:1 대응.
 
 ---
@@ -53,7 +53,7 @@ mcp__novel_editor__review_episode(
 > - CLAUDE.md에서 nim_feedback/ollama_feedback 플래그 파싱
 > - Phase 1: NIM + Ollama 병렬 호출 (활성화된 소스만)
 > - Phase 2: Gemini CLI 호출 (NIM/Ollama 결과를 참고 자료로 전달)
-> - Gemini 실패 시 NIM Proxy로 자동 fallback
+> - Gemini 실패 시: 건너뛰고 로그에 기록. 다음 묶음 검토(P7)에서 재시도
 > - `EDITOR_FEEDBACK_nim.md`, `EDITOR_FEEDBACK_gemini.md` 등 자동 저장
 > - 결과 요약 반환
 
@@ -327,7 +327,7 @@ python3 /root/novel/nim-proxy/ollama-review.py \
 ## 주의사항
 
 1. **외부 AI는 본문을 수정하지 않는다**: GEMINI.md에 명시된 규칙. 외부 AI는 피드백 파일에만 작성한다.
-2. **모든 소스 실패 시**: 에러를 보고하고 건너뛴다. 피드백 없이도 집필은 진행된다.
+2. **Gemini 실패 시**: NIM으로 fallback하지 않는다. 에러를 `editor-feedback-log.md`에 기록하고 건너뛴다. 해당 에피소드는 다음 묶음 검토(P7, 5화마다)에서 재리뷰된다. 피드백 없이도 집필은 진행된다.
 3. **피드백 충돌 시 우선순위**: CLAUDE.md > settings/ > 이전 에피소드 본문 > Gemini 피드백 > NIM 피드백 > Ollama 피드백.
 4. **editor-feedback-log.md가 없으면 새로 생성한다**: 첫 호출 시 로그 파일이 없을 수 있다. 헤더 포함하여 새로 만든다.
 5. **MCP 서버 사전 조건**: `novel-editor` MCP 서버가 `.mcp.json`에 등록되어 있고, `settings.local.json`에 `mcp__novel-editor__*` 권한이 있어야 한다.

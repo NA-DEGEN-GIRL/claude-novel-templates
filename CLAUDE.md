@@ -162,6 +162,8 @@
 2. **Ollama 피드백** (`ollama_feedback: true` 시): 로컬 Ollama 모델로 편집 리뷰 → `EDITOR_FEEDBACK_ollama.md`
 3. **Gemini 피드백** (항상): Gemini CLI로 편집 리뷰. NIM/Ollama 결과가 있으면 참고 자료로 활용 → `EDITOR_FEEDBACK_gemini.md`
 
+> **Gemini 실패 시**: NIM으로 fallback하지 않는다. 건너뛰고 로그에 기록한 뒤, 다음 묶음 검토(P7, 5화마다)에서 재리뷰한다. reviewer·continuity-checker·korean-proofreader가 이미 자체 검증을 수행하므로 외부 리뷰 1회 누락은 치명적이지 않다.
+
 → 자체 검토 + 다중 소스 리뷰 결과를 종합하여 텍스트 수정을 먼저 반영한 후,
   `.claude/agents/korean-proofreader.md` 기준으로 한글 교정을 수행한다 (맞춤법, 번역투, AI 습관 단어, 줄임표 등).
 
