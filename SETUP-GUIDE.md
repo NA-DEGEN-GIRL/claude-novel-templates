@@ -196,7 +196,7 @@ normal quality, jpeg artifacts, signature, watermark, username, blurry
 
 표지는 writer 에이전트가 첫 에피소드 집필 시 자동 생성하거나, 사용자가 직접 생성할 수 있다.
 
-### Step 9: batch-supervisor.md 설정 (선택)
+### Step 9: batch-supervisor.md 설정
 
 배치 자동 집필을 사용하려면 `batch-supervisor.md`를 소설에 맞게 편집한다:
 - `NOVEL_ID`, `SESSION`, `ARC_MAP` 등 설정 변수 수정
