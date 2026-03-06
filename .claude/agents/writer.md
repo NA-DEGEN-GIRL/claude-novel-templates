@@ -75,7 +75,7 @@
 
 ### A. 집필 전 (Pre-Writing)
 
-- [ ] 0. **표지 확인 (첫 집필 시만)**: 소설 루트에 `cover.png` 또는 `cover.jpg`가 없으면 NovelAI MCP 서버의 `generate_image`로 표지를 생성하고 `config.json`의 `cover` 필드를 업데이트한다. 이미 존재하면 건너뛴다.
+- [ ] 0. **표지 확인 (첫 집필 시만)**: 소설 루트에 `cover.png` 또는 `cover.jpg`가 없으면 NovelAI MCP 서버의 `generate_image`로 표지를 생성한다. 이미 존재하면 건너뛴다.
 - [ ] 1. `summaries/running-context.md` 읽기 — 현재 시점, 전체 흐름, 최근 화 상세, 캐릭터 상태, 복선 상태, 다음 화 예고 확인
 - [ ] 2. 해당 아크/파트 플롯 파일에서 이번 화 목표 확인 — 아크 전체에서 이번 화의 위치와 역할 파악
 - [ ] 3. 복선 관리 파일에서 이번 화 복선 체크 — 투하/힌트/회수 예정인 복선 ID 목록 작성
@@ -149,10 +149,6 @@
 7. **만남/관계** (`summaries/relationship-log.md`) — 첫 만남/관계 변화/호칭 변화 기록
 
 **추가:** 한자 용어집 (`summaries/hanja-glossary.md`) — 이번 화에서 처음 한글(漢字) 병기한 용어가 있으면 추가. 이미 등록된 용어를 병기했으면 본문에서 한자 제거.
-
-#### 20. config.json 업데이트
-
-CLAUDE.md 3.5절의 config.json 업데이트 규칙을 따라 `/root/novel/config.json`에 새 에피소드를 등록한다.
 
 ### E. 에이전트 리뷰 & 수정
 
@@ -262,7 +258,7 @@ CLAUDE.md 3.5절의 config.json 업데이트 규칙을 따라 `/root/novel/confi
 
 > 상세 규칙은 `settings/07-periodic.md`를 참조한다.
 
-- 요약 파일 갱신은 **보류** (충돌 방지). config.json 등록과 EPISODE_META 삽입은 수행.
+- 요약 파일 갱신은 **보류** (충돌 방지). EPISODE_META 삽입은 수행.
 - 완료 후 `continuity-checker` 병렬 교차 검증 → 충돌 수정 → 요약 일괄 갱신.
 
 ---
