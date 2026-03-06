@@ -202,6 +202,66 @@ normal quality, jpeg artifacts, signature, watermark, username, blurry
 - `NOVEL_ID`, `SESSION`, `ARC_MAP` 등 설정 변수 수정
 - `WRITER_CMD`로 집필 모델 지정 (기본: `claude`)
 
+### Step 10: 교차 검증
+
+모든 설정 파일 생성이 끝나면, **집필 전에** 아래 검증을 수행하여 설정 간 모순을 사전에 제거한다.
+
+#### 검증 항목
+
+| # | 검증 | 대상 파일 | 방법 |
+|---|------|-----------|------|
+| V1 | 캐릭터 ↔ 세계관 | `03-characters.md` ↔ `04-worldbuilding.md` | 캐릭터의 능력/직업/출신이 세계관 규칙에 존재하는가 |
+| V2 | 플롯 ↔ 캐릭터 | `master-outline.md` ↔ `03-characters.md` | 플롯이 요구하는 역할을 수행할 캐릭터가 있는가 |
+| V3 | 핵심 약속 ↔ 플롯 | `CLAUDE.md` 1.1 ↔ `master-outline.md` | 핵심 약속 3가지가 아크 구성으로 실현 가능한가 |
+| V4 | 호칭/어투 ↔ 관계 | `CLAUDE.md` 8.1 ↔ `03-characters.md` | 호칭 매트릭스가 캐릭터 간 관계 설정과 일치하는가 |
+| V5 | 금지 사항 ↔ 플롯 | `CLAUDE.md` 5 ↔ `master-outline.md` | 플롯이 금지 사항을 위반하는 전개를 포함하지 않는가 |
+| V6 | 연속성 항목 ↔ 세계관 | `continuity-checker.md` ↔ `04-worldbuilding.md` | 소설 고유 연속성 항목(소문 추적, 결제 금액 등)이 누락되지 않았는가 |
+| V7 | 문체 ↔ 세계관 | `01-style-guide.md` ↔ `04-worldbuilding.md` | 시대 배경에 맞지 않는 단위/외래어/숫자 표기 규칙이 있는가 |
+| V8 | 복선 ↔ 아크 배치 | `foreshadowing.md` ↔ `master-outline.md` | 복선 설치·회수 시점이 아크 구성과 정합하는가 |
+
+#### 검증 방법
+
+에이전트를 활용하여 병렬 검증한다:
+
+1. **continuity-checker** 관점: V1, V2, V4, V6 — 설정 파일 간 사실 관계 대조
+2. **reviewer** 관점: V3, V5 — 서사적 실현 가능성 판단
+3. **korean-proofreader** 관점: V7 — 문체/단위/표기 규칙 일관성
+
+#### 검증 결과 처리
+
+- 모순 발견 시: 해당 설정 파일을 **즉시 수정**한다.
+- 판단 불가 시: 사용자에게 선택지를 제시한다.
+- 검증 통과 시: 다음 단계(git commit)로 진행한다.
+
+### Step 11: git commit (2단계 커밋)
+
+셋업은 `/root/novel/`(상위 폴더)에서 실행되므로, **두 곳에 각각 커밋**해야 한다.
+
+#### 11-A: 소설 폴더 독립 레포 생성
+
+소설 폴더는 상위 레포의 `.gitignore`로 제외되어 있으므로, **독립 git 레포**로 초기화한다.
+
+```bash
+cd /root/novel/no-title-003
+git init
+git add -A
+git commit -m "사기열전(no-title-016) 프로젝트 초기 셋업"
+```
+
+> 소설 폴더 내부의 모든 파일(CLAUDE.md, settings/, agents/, plot/, summaries/ 등)이 이 레포에 커밋된다.
+
+#### 11-B: 상위 레포에 등록 파일 커밋
+
+상위 레포(`/root/novel/`)에서는 소설 폴더 자체가 `.gitignore`로 제외되어 있으므로, **config.json과 vercel.json만** 커밋한다.
+
+```bash
+cd /root/novel
+git add config.json vercel.json .gitignore
+git commit -m "소설명(no-title-003) 프로젝트 등록 - config.json + vercel.json 보안 설정"
+```
+
+> `.gitignore` 변경도 함께 커밋한다 (Step 5에서 새 소설 폴더를 제외 목록에 추가했으므로).
+
 **셋업은 여기까지.** 이후 집필 시작은 아래 "셋업 후 집필 시작"을 참조한다.
 
 ---
