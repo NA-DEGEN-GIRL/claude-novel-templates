@@ -108,7 +108,7 @@ claude
 4. 리뷰 반영 후 korean-proofreader로 한글 교정
 [후처리]
 - 요약 파일 갱신 (writer.md D단계)
-- config.json 업데이트 (에피소드 등록 + totalEpisodes). git add/commit 대상에 포함하지 않는다.
+- config.json은 건드리지 않는다 (감독자가 처리).
 - git commit은 현재 소설 폴더 파일만. push 안 함.
 [자율 실행]
 - 무인 배치이다. 질문하지 말고 모든 단계를 자율 완료한다.
@@ -168,7 +168,19 @@ tmux capture-pane -t {{SESSION}} -p -S -50
 
 세 조건 모두 만족해야 "완료"로 판정한다. 프롬프트만 보이고 파일이 없으면 에러로 중단된 것일 수 있다.
 
-#### 4d. 감독 주기
+#### 4d. config.json 업데이트 (감독자 책임)
+
+완료 판정 후, 감독자가 직접 `/root/novel/config.json`에 에피소드를 등록한다. 집필자는 config.json을 건드리지 않는다.
+
+1. chapter 파일에서 EPISODE_META의 `title`과 `date`를 읽는다
+2. 해당 소설의 해당 part > `episodes` 배열에 추가:
+   ```json
+   { "number": N, "title": "제목", "file": "{{NOVEL_ID}}/chapters/{arc}/chapter-{NN}.md" }
+   ```
+3. `totalEpisodes`를 실제 등록 수와 일치시킨다
+4. 누락된 이전 화가 있으면 함께 등록한다
+
+#### 4e. 감독 주기
 
 | 상황 | 확인 간격 |
 |------|-----------|
