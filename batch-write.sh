@@ -76,6 +76,24 @@ for (( batch_start=START; batch_start<=END; batch_start+=BATCH_SIZE )); do
         batch_end=$END
     fi
 
+    # 이미 완료된 에피소드 건너뛰기 (재시작 시 중복 방지)
+    actual_start=$batch_start
+    for (( ep=batch_start; ep<=batch_end; ep++ )); do
+        ep_arc=$(get_arc "$ep")
+        ep_file="chapters/${ep_arc}/chapter-$(printf '%02d' "$ep").md"
+        if [ -f "$ep_file" ]; then
+            actual_start=$((ep + 1))
+            log "${ep}화 이미 존재 → 건너뜀 ($(wc -c < "$ep_file")b)"
+        else
+            break
+        fi
+    done
+    if [ "$actual_start" -gt "$batch_end" ]; then
+        log "배치 ${batch_start}~${batch_end}화 전체 완료 → 건너뜀"
+        continue
+    fi
+    batch_start=$actual_start
+
     arc=$(get_arc "$batch_start")
     arc_file="plot/${arc}.md"
 
@@ -191,15 +209,16 @@ ${boundary}화(아크 종료) 완료 후:
             fi
         done
         if [ ${#missing[@]} -gt 0 ]; then
+            first_missing=$(echo "${missing[0]}" | grep -o '[0-9]*')
             log "ERROR: claude 성공 반환이나 파일 미생성: ${missing[*]}"
-            log "재시작: cd ${NOVEL_DIR} && bash batch-write.sh $((batch_start)) ${END}"
+            log "재시작: cd ${NOVEL_DIR} && bash batch-write.sh ${first_missing} ${END}"
             exit 1
         fi
         log "배치 ${batch_start}~${batch_end}화 완료: ${created[*]}"
     else
         EXIT_CODE=$?
         log "ERROR: 배치 ${batch_start}~${batch_end}화 실패 (exit code: ${EXIT_CODE})"
-        log "재시작: cd ${NOVEL_DIR} && bash batch-write.sh $((batch_start)) ${END}"
+        log "재시작: cd ${NOVEL_DIR} && bash batch-write.sh ${batch_start} ${END}"
         exit 1
     fi
 
