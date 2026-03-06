@@ -46,12 +46,11 @@
 | P1 | 요약 정합성 | `summary-validator` **일괄 감사(모드 B)** — 직전 점검 이후 작성된 에피소드 대상 |
 | P2 | 복선 회수 시한 | `plot/foreshadowing.md`에서 회수 예정 시점이 지난 복선이 있는지 확인 |
 | P3 | 캐릭터 상태 최신성 | `summaries/character-tracker.md`의 현재 상태가 **최신 에피소드 종료 시점**과 일치하는지 확인 |
-| P4 | 성격 드리프트 | 최근 5화의 주요 캐릭터 대사/행동이 `settings/03-characters.md`의 성격·**대표 대사**와 부합하는지 통독 검토 |
-| P5 | 미이행 약속 | `summaries/promise-tracker.md`에서 시한이 지났거나 방치된 약속이 있는지 확인 |
-| P6 | running-context | `summaries/running-context.md`가 200줄 이내인지, 최신 상태를 정확히 반영하는지 확인 |
-| P7 | 다중 소스 일괄 리뷰 | `gemini-feedback` **배치 모드(모드 B)**로 직전 점검 이후 에피소드를 일괄 리뷰 |
-| P8 | 한글 품질 일괄 점검 | P7 반영 후 `korean-proofreader` 기준으로 재검수. 연속 집필로 누적된 AI 습관 단어/반복 패턴에 주의 |
-| P9 | 메타 참조 금지 | 본문에서 "X화에서", "프롤로그에서", "1부에서" 등 에피소드 번호/구조명 참조 전수 검사 |
+| P4 | 미이행 약속 | `summaries/promise-tracker.md`에서 시한이 지났거나 방치된 약속이 있는지 확인 |
+| P5 | running-context | `summaries/running-context.md`가 200줄 이내인지, 최신 상태를 정확히 반영하는지 확인 |
+| P6 | 다중 소스 일괄 리뷰 | `gemini-feedback` **배치 모드(모드 B)**로 직전 점검 이후 에피소드를 일괄 리뷰. **성격 드리프트 확인 포함** — 주요 캐릭터 대사/행동이 `settings/03-characters.md`와 부합하는지 함께 점검 |
+| P7 | 한글 품질 점검 | P6에서 텍스트 수정이 발생한 에피소드만 `korean-proofreader` 기준으로 재검수 |
+| P8 | 메타 참조 금지 | 본문에서 "X화에서", "프롤로그에서", "1부에서" 등 에피소드 번호/구조명 참조 전수 검사 |
 
 ### 점검 후 조치
 
