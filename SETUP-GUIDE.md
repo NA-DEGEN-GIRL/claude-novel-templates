@@ -202,18 +202,26 @@ normal quality, jpeg artifacts, signature, watermark, username, blurry
 - `NOVEL_ID`, `SESSION`, `ARC_MAP` 등 설정 변수 수정
 - `WRITER_CMD`로 집필 모델 지정 (기본: `claude`)
 
-### Step 10: 첫 에피소드 작성
+**셋업은 여기까지.** 이후 집필 시작은 아래 "셋업 후 집필 시작"을 참조한다.
 
-소설 폴더에서 새 Claude 세션을 시작하고 집필을 시작한다:
+---
+
+## 셋업 후 집필 시작
+
+셋업 완료 후, 집필은 별도 세션에서 시작한다:
+
+### 방법 A: 직접 집필
 
 ```bash
 cd /root/novel/no-title-003 && claude
+# → "1화 작성해줘"
 ```
 
-세션에서 아래와 같이 지시하면 writer 에이전트가 전체 파이프라인을 자동 수행한다:
+### 방법 B: 감독자로 배치 집필
 
-```
-프롤로그 1화를 작성해줘.
+```bash
+cd /root/novel && claude
+# → "no-title-003/batch-supervisor.md 대로 수행"
 ```
 
 ---
