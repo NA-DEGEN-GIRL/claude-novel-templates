@@ -272,7 +272,7 @@ cd {소설_폴더} && gemini -p "/root/novel/GEMINI.md에 따라 {챕터_파일_
 ### GPT 피드백 (Codex CLI)
 
 ```bash
-cd {소설_폴더} && codex exec "GPT.md에 따라 {챕터_파일_경로}를 리뷰해. 설정 파일(settings/), 요약(summaries/)을 참고해서 EDITOR_FEEDBACK_gpt.md에 결과를 작성해." --full-auto
+cd {소설_폴더} && codex exec "GPT.md에 따라 {챕터_파일_경로}를 리뷰해. 설정 파일(settings/), 요약(summaries/)을 참고해서 EDITOR_FEEDBACK_gpt.md에 결과를 작성해." --full-auto -m gpt-5.4
 ```
 
 ### Ollama 피드백
