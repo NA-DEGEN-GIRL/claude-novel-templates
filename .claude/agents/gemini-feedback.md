@@ -67,7 +67,6 @@ mcp__novel_editor__review_episode(
 - `"gemini,gpt"`: Gemini + GPT만 실행
 - `"all"`: 모든 소스 실행
 
-> **MCP 서버 미설치 시 fallback**: `novel-editor` MCP 서버가 없으면 아래 "Bash 직접 호출" 섹션을 참고하여 수동으로 외부 AI를 호출한다.
 
 #### Step 4: 피드백 수신 확인
 
@@ -232,59 +231,17 @@ mcp__novel_editor__check_status()
 
 ---
 
-## Bash 직접 호출 (MCP 서버 미설치 시 fallback)
+## 외부 리뷰 실패 처리
 
-`novel-editor` MCP 서버가 없는 환경에서는 Bash로 직접 호출할 수 있다. MCP가 있으면 이 섹션은 무시한다.
+MCP `review_episode`가 특정 소스에서 `❌`를 반환하면:
 
-<details>
-<summary>Bash 직접 호출 방법 (접기)</summary>
-
-### NIM 피드백
-
-```bash
-cd {소설_폴더} && \
-GUIDELINES=$(cat /root/novel/GEMINI.md) && \
-CHAPTER=$(cat {챕터_파일_경로}) && \
-STYLE=$(cat settings/01-style-guide.md 2>/dev/null) && \
-CHARS=$(cat settings/03-characters.md 2>/dev/null) && \
-WORLD=$(cat settings/04-worldbuilding.md 2>/dev/null) && \
-python3 /root/novel/nim-proxy/chat.py \
-  -m "{nim_feedback_model}" \
-  -T 600 \
-  -s "$GUIDELINES" \
-  "아래 소설 에피소드를 리뷰해. 결과는 EDITOR_FEEDBACK 형식으로 출력해.
-
-[설정 참고]
-문체 가이드: $STYLE
-캐릭터: $CHARS
-세계관: $WORLD
-
-[리뷰 대상]
-$CHAPTER" > EDITOR_FEEDBACK_nim.md
-```
-
-### Gemini 피드백
-
-```bash
-cd {소설_폴더} && gemini -p "/root/novel/GEMINI.md에 따라 {챕터_파일_경로}를 리뷰해. 설정 파일(settings/), 요약(summaries/)을 참고해서 EDITOR_FEEDBACK_gemini.md에 결과를 작성해." -y
-```
-
-### GPT 피드백 (Codex CLI)
-
-```bash
-cd {소설_폴더} && codex exec "GPT.md에 따라 {챕터_파일_경로}를 리뷰해. 설정 파일(settings/), 요약(summaries/)을 참고해서 EDITOR_FEEDBACK_gpt.md에 결과를 작성해." --full-auto -m gpt-5.4
-```
-
-### Ollama 피드백
-
-```bash
-python3 /root/novel/nim-proxy/ollama-review.py \
-  --file {챕터_파일_절대경로} \
-  --model {ollama_feedback_model} \
-  --novel {소설_ID}
-```
-
-</details>
+1. **재시도하지 않는다** — rate limit, 일시적 장애 등이므로 Bash fallback도 시도하지 않는다.
+2. **`editor-feedback-log.md`에 실패를 기록한다**:
+   ```
+   | - | {소스} 외부 리뷰 실패 | ❌ 실패 | {에러 메시지 요약}. P6 일괄 리뷰에서 재시도 예정. |
+   ```
+3. **해당 회차는 외부 리뷰 없이 진행한다** — reviewer, continuity-checker, korean-proofreader의 자체 검증만으로 충분하다.
+4. **P6 정기 점검에서 자동 재리뷰된다** — `editor-feedback-log.md`의 `❌ 실패` 항목을 확인하여 우선 포함.
 
 ---
 
