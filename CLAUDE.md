@@ -18,6 +18,7 @@
 - **nim_feedback_model**: "mistralai/mistral-large-3-675b-instruct-2512"
 - **ollama_feedback**: false  <!-- true로 변경하면 로컬 Ollama 기반 편집 리뷰를 추가 수행 -->
 - **ollama_feedback_model**: "gpt-oss:120b"
+- **gpt_feedback**: true  <!-- false로 변경하면 Codex CLI(GPT) 편집 리뷰를 비활성화 -->
 - **illustration**: false  <!-- true로 변경하면 에피소드 삽화·캐릭터 초상화를 생성. 표지 이미지는 이 플래그와 무관하게 항상 생성 -->
 
 ### 1.1 작품의 핵심 약속
@@ -36,6 +37,7 @@
 {{NOVEL_ID}}/
 ├── CLAUDE.md              ← 현재 파일 (집필 헌법)
 ├── EDITOR_FEEDBACK_gemini.md  ← Gemini 편집 리뷰 (항상 생성)
+├── EDITOR_FEEDBACK_gpt.md    ← GPT 편집 리뷰 (gpt_feedback: true 시, 기본 활성)
 ├── EDITOR_FEEDBACK_nim.md    ← NIM 편집 리뷰 (nim_feedback: true 시)
 ├── EDITOR_FEEDBACK_ollama.md ← Ollama 편집 리뷰 (ollama_feedback: true 시)
 ├── settings/              ← 세계관, 캐릭터, 규칙 설정
@@ -149,11 +151,12 @@
 
 자체 검토와 동시에 `.claude/agents/gemini-feedback.md` 에이전트를 호출하여 **다중 소스 편집 리뷰를 병렬로 수행**한다.
 
-이 에이전트는 CLAUDE.md의 플래그에 따라 최대 3개 소스의 피드백을 수집한다:
+이 에이전트는 CLAUDE.md의 플래그에 따라 최대 4개 소스의 피드백을 수집한다:
 
 1. **NIM 피드백** (`nim_feedback: true` 시): NIM 프록시의 대형 모델로 편집 리뷰 → `EDITOR_FEEDBACK_nim.md`
 2. **Ollama 피드백** (`ollama_feedback: true` 시): 로컬 Ollama 모델로 편집 리뷰 → `EDITOR_FEEDBACK_ollama.md`
-3. **Gemini 피드백** (항상): Gemini CLI로 편집 리뷰. NIM/Ollama 결과가 있으면 참고 자료로 활용 → `EDITOR_FEEDBACK_gemini.md`
+3. **Gemini 피드백** (항상): Gemini CLI로 편집 리뷰 (연속성/세계관 중심) → `EDITOR_FEEDBACK_gemini.md`
+4. **GPT 피드백** (`gpt_feedback: true` 시, 기본 활성): Codex CLI로 편집 리뷰 (문체/대화/감정선 중심) → `EDITOR_FEEDBACK_gpt.md`
 
 > **Gemini 실패 시**: NIM으로 fallback하지 않는다. 건너뛰고 로그에 기록한 뒤, 다음 묶음 검토(P7, 5화마다)에서 재리뷰한다. reviewer·continuity-checker·korean-proofreader가 이미 자체 검증을 수행하므로 외부 리뷰 1회 누락은 치명적이지 않다.
 
@@ -163,6 +166,8 @@
 > **순서 근거**: 편집 리뷰가 텍스트 수정을 제안하면 교정 대상이 바뀌므로, 한글 교정은 반드시 모든 텍스트 수정이 완료된 후 마지막에 수행한다.
 
 > **NIM/Ollama 피드백 반영 기준**: NIM/Ollama는 Gemini보다 신뢰도가 낮을 수 있다. Gemini 리뷰에서 **놓친 진짜 오류**(맞춤법, 연속성, 논리 모순 등)만 선별 반영한다. 문체 제안, 어색함 지적, 대사 교정 등 주관적 항목은 무시한다.
+
+> **GPT 피드백 반영 기준**: GPT(Codex)는 문체/대화/감정선 전문이다. [Prose], [Dialogue], [Emotion] 카테고리의 지적은 Gemini와 동등하게 적극 반영한다. [Other] 카테고리(연속성/세계관)는 Gemini 판단을 우선한다.
 
 ### 3.4 연속성 검증 (Continuity Check)
 
@@ -195,7 +200,7 @@
 3. **EPISODE_META 삽입** (선택): 에피소드 끝에 메타데이터 블록을 추가한다.
    - EPISODE_META의 `date` 필드에 **에피소드 집필 완료일**(오늘 날짜)을 `"YYYY-MM-DD"` 형식으로 기입한다.
    - 이 date 값은 리더에서 에피소드의 **업로드 날짜**로 표시된다.
-4. **피드백 로그 갱신**: 3.3단계에서 처리한 편집 리뷰(Gemini/NIM/Ollama)의 반영/참고/건너뜀 결과를 `summaries/editor-feedback-log.md`에 기록한다. (리뷰 자체는 3.3에서 이미 수행됨)
+4. **피드백 로그 갱신**: 3.3단계에서 처리한 편집 리뷰(Gemini/GPT/NIM/Ollama)의 반영/참고/건너뜀 결과를 `summaries/editor-feedback-log.md`에 기록한다. (리뷰 자체는 3.3에서 이미 수행됨)
 5. **Git 커밋**: 집필 진행 상황을 기록하기 위해 적절한 시점에 커밋한다.
    - 에피소드 집필 완료 후 (본문 + 요약 파일 함께)
    - 여러 화를 연속 집필할 때는 2~3화 단위로 묶어서 커밋 가능
@@ -319,9 +324,9 @@ next_episode_hook: "{{HOOK}}"
 
 ## 9. 에디터 피드백 시스템
 
-`.claude/agents/gemini-feedback.md` 에이전트가 다중 소스(Gemini/NIM/Ollama) 피드백을 오케스트레이션한다.
+`.claude/agents/gemini-feedback.md` 에이전트가 다중 소스(Gemini/GPT/NIM/Ollama) 피드백을 오케스트레이션한다.
 
-- **Gemini 피드백이 최종 기준**. NIM/Ollama는 Gemini가 놓친 객관적 오류 보충용.
+- **Gemini + GPT가 1차 기준**. Gemini는 연속성/세계관, GPT는 문체/대화/감정선 전문. NIM/Ollama는 보충용.
 - **합리적 제안은 반영**, 설정 충돌 시 건너뜀 (사유 기록), 모든 처리 결과를 `summaries/editor-feedback-log.md`에 로그.
 - **결과 표기**: `✅ 반영` / `📌 참고` / `⏭️ 건너뜀`
 - **워크플로우**: 3.1 Prep에서 미처리 피드백 확인 → 3.5 Post에서 처리 결과 로그

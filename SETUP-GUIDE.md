@@ -10,6 +10,19 @@
 
 ---
 
+## 사전 요구사항
+
+외부 AI 편집 리뷰를 사용하려면 아래 CLI 도구가 설치되어 있어야 한다:
+
+```bash
+npm install -g @google/gemini-cli    # Gemini CLI (연속성/세계관 리뷰)
+npm install -g @openai/codex          # Codex CLI (문체/대화/감정선 리뷰)
+```
+
+> NIM/Ollama는 선택사항이며, CLAUDE.md의 `nim_feedback`/`ollama_feedback` 플래그로 활성화한다.
+
+---
+
 ## 수동 셋업 절차
 
 ### Step 1: 폴더 생성
@@ -124,7 +137,7 @@ no-title-003/.claude/
     ├── reviewer.md                  ← 품질 검토 에이전트 (7항목, 5점 루브릭)
     ├── continuity-checker.md        ← 연속성 검증 에이전트 (13항목)
     ├── korean-proofreader.md        ← 한글 교정 에이전트 (8항목)
-    ├── gemini-feedback.md           ← 다중 소스 피드백 에이전트 (Gemini/NIM/Ollama)
+    ├── gemini-feedback.md           ← 다중 소스 피드백 에이전트 (Gemini/GPT/NIM/Ollama)
     ├── plot-planner.md              ← 플롯 설계 에이전트
     ├── summary-generator.md         ← 요약 생성 에이전트 (7개 파일 갱신)
     ├── summary-validator.md         ← 요약 검증 에이전트 (원문 대조)
