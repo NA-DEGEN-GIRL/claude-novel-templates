@@ -166,7 +166,8 @@ my-novel/
 ├── SETUP-GUIDE.md             ← 수동 셋업 가이드
 ├── INIT-PROMPT.md             ← AI 셋업 프롬프트 (4종)
 ├── batch-write.sh             ← 배치 자동 집필 스크립트
-├── batch-supervisor.md        ← 배치 감독 프롬프트 (tmux 방식)
+├── batch-supervisor.md        ← 배치 집필 감독 프롬프트 (tmux 방식)
+├── batch-supervisor-audit.md  ← 배치 감사 감독 프롬프트 (tmux 방식)
 ├── settings/                  ← 세계관·캐릭터·규칙
 │   ├── 01-style-guide.md
 │   ├── 02-episode-structure.md
@@ -398,6 +399,20 @@ F. 마무리
 |------|------|------|
 | 정밀 | tracker에 이전 감사 데이터 존재 | 누적 데이터(캐릭터 상태, 복선 등) 활용 |
 | 부트스트랩 | tracker 없음 | summaries 기반 맥락 추정, 확인 불가 항목은 ⚠️ 처리 |
+
+**배치 감사 감독** (`batch-supervisor-audit.md`):
+
+대량 감사를 자동화하려면 배치 감사 감독을 사용한다. Claude Code가 tmux 세션을 감독하며 N화 단위로 `/audit` → `/clear` → `/audit --resume`을 반복한다.
+
+| 설정 | 의미 | 적합한 모델 |
+|------|------|-------------|
+| `BATCH_SIZE=-1` | 전체를 한 번에 감사 (auto-compact 사용) | Claude Code |
+| `BATCH_SIZE=10` | 10화씩 끊어서 감사 + `/clear` 반복 | GLM-5, Qwen 등 (auto-compact 없음) |
+
+```bash
+cd /root/novel && claude
+# → "batch-supervisor-audit.md 대로 수행"
+```
 
 ---
 
