@@ -30,7 +30,6 @@ Claude Code가 tmux 세션을 주기적으로 확인하며, 또 다른 AI 인스
 | `SESSION` | tmux 세션명 | `audit-001` |
 | `NOVEL_DIR` | 소설 절대 경로 | `/root/novel/no-title-001` |
 | `BATCH_SIZE` | 배치당 감사 화수 (N) | `10` |
-| `WRITER_CMD` | 감사자 실행 명령 | `claude` (기본) |
 | `START_EP` | 시작 화수 (선택, 기본 1) | `1` |
 | `END_EP` | 종료 화수 (선택, 기본 마지막 화) | `100` |
 
@@ -43,13 +42,7 @@ Claude Code가 tmux 세션을 주기적으로 확인하며, 또 다른 AI 인스
 | `5` | 5화씩 (보수적) | 컨텍스트가 작은 모델, 에피소드 분량이 큰 소설 |
 | `20` | 20화씩 (공격적) | 컨텍스트가 넉넉한 모델 |
 
-### WRITER_CMD 예시
-
-| 값 | 설명 |
-|----|------|
-| `claude` | 기본 Claude Code |
-| `claude --model claude-sonnet-4-6` | 특정 모델 지정 |
-| `claude --model glm-5:latest` | NIM 프록시 경유 GLM-5 |
+> 모델/엔드포인트는 소설 폴더의 `.claude/settings.local.json`의 `env` 섹션에서 설정한다. 감독자는 항상 `claude`만 실행한다.
 
 ---
 
@@ -72,7 +65,7 @@ claude
 ### 1. 세션 관리
 
 - tmux 세션명: `{{SESSION}}`
-- **세션이 없으면**: `tmux new-session -d -s {{SESSION}} -x 220 -y 50` 으로 생성하고, `tmux send-keys -t {{SESSION}} 'cd {{NOVEL_DIR}} && unset CLAUDECODE && {{WRITER_CMD}}' Enter` 실행
+- **세션이 없으면**: `tmux new-session -d -s {{SESSION}} -x 220 -y 50`으로 생성하고, `tmux send-keys -t {{SESSION}} 'cd {{NOVEL_DIR}} && unset CLAUDECODE && claude' Enter` 실행
 - **세션이 있으면**: 화면을 캡처하여 현재 상태를 파악하고 이어서 진행
 - **세션 크기**: 220x50 이상으로 설정해야 capture-pane에서 잘리지 않는다
 
@@ -147,7 +140,7 @@ tmux capture-pane -t {{SESSION}} -p -S -50
 | **MCP 연결 실패** | `MCP`, `connection`, `timeout`, `ECONNREFUSED` 등 | `/mcp` 명령으로 재연결 시도. 반복 실패 시 세션 재시작 |
 | **무한 루프** | 동일 작업이 3회 이상 반복되거나, 15분 이상 같은 화에서 진전 없음 | `/clear` 후 `--resume` 프롬프트로 재시작 |
 | **완료** | `> ` 프롬프트가 나타나고, 직전 출력에 보고서 작성 완료 관련 메시지가 있음 | 다음 배치 진행 또는 전체 완료 |
-| **비정상 종료** | AI 프로세스가 없고 bash 프롬프트(`$`)만 보임 | `unset CLAUDECODE && {{WRITER_CMD}}`로 재시작 |
+| **비정상 종료** | AI 프로세스가 없고 bash 프롬프트(`$`)만 보임 | `unset CLAUDECODE && claude`로 재시작 |
 | **컨텍스트 초과** | `context`, `token limit`, `too long` 등의 메시지 | `/clear` 후 `--resume` 프롬프트로 재시작. BATCH_SIZE가 너무 큰 것이므로 이후 배치에서 줄인다 |
 
 #### 4c. 완료 판단
