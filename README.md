@@ -21,12 +21,13 @@ AI(Claude Code)로 웹소설을 쓰기 위한 프로젝트 템플릿.
 
 ### 주요 기능
 
-- **9개 전문 에이전트**: 집필, 품질 검토, 연속성 검증, 한글 교정, 플롯 설계 등
+- **11개 전문 에이전트**: 집필, 품질 검토, 연속성 검증, 한글 교정, 전수 감사, 감사 수정 등
 - **연속성 자동 추적**: 캐릭터 상태, 관계, 정보 보유 현황, 약속/복선을 파일로 관리
 - **외부 AI 편집**: Gemini CLI / NIM Proxy / Ollama 다중 소스 검토 (Claude가 쓰고, 외부 AI가 편집)
 - **삽화 자동 생성**: NovelAI 연동, 캐릭터 외모 일관성 자동 보장
 - **한자 표기 추적**: 첫 등장 시 한글(漢字) 병기, 이후 자동 생략
 - **병렬 집필 지원**: 여러 에이전트가 동시에 다른 화를 쓰고, 사후 정합성 점검
+- **전수 감사**: `/audit`으로 전 에피소드 연속성·품질·한글 일괄 검증, `/audit-fix`로 보고서 기반 자동 수정
 
 ---
 
@@ -189,7 +190,10 @@ my-novel/
 └── .claude/
     ├── settings.local.json         ← Claude Code 권한 설정 (gitignore 대상)
     ├── settings.local.example.json ← 권한 설정 예시 (복사하여 사용)
-    └── agents/                ← 전문 에이전트 9종
+    ├── commands/              ← 스킬 커맨드 (슬래시 명령)
+    │   ├── audit.md               /audit — 전수 감사
+    │   └── audit-fix.md           /audit-fix — 감사 수정
+    └── agents/                ← 전문 에이전트 11종
         ├── writer.md
         ├── reviewer.md
         ├── continuity-checker.md
@@ -198,7 +202,9 @@ my-novel/
         ├── plot-planner.md
         ├── summary-generator.md
         ├── summary-validator.md
-        └── illustration-manager.md
+        ├── illustration-manager.md
+        ├── full-audit.md              전수 감사 에이전트
+        └── audit-fixer.md             감사 수정 에이전트
 ```
 
 ---
@@ -218,7 +224,7 @@ my-novel/
 ├── chapters/              ← 빈 아크 폴더
 ├── summaries/             ← 빈 추적 파일들
 ├── batch-supervisor.md    ← 배치 자동 집필 설정
-└── .claude/agents/        ← 9개 전문 에이전트
+└── .claude/agents/        ← 11개 전문 에이전트
 ```
 
 셋업만 수행한다. **에피소드 집필은 Phase 2에서 별도로 시작.**
@@ -340,7 +346,51 @@ F. 마무리
   → 정기 점검 수행 (5화 미만이어도)
 ```
 
-### 에이전트 9종
+### Phase 6: 전수 감사 (수시)
+
+집필 후 누적된 오류를 일괄 점검하고 수정한다. 정기 점검(Phase 4)이 5화 단위 예방이라면, 전수 감사는 **전체 또는 범위 지정 정밀 검증**이다.
+
+```
+/audit              ← 전 에피소드 감사 (읽기 전용, 본문 수정 없음)
+/audit 1-30         ← 범위 지정 감사
+/audit --resume     ← 중단된 감사 재개
+
+    ↓ 보고서 생성: summaries/full-audit-report.md
+
+/audit-fix          ← 보고서 기반 자동 수정
+/audit-fix 10-20    ← 범위 지정 수정
+/audit-fix --resume ← 중단된 수정 재개
+```
+
+**감사 파이프라인:**
+
+```
+1. /audit 실행
+   │  설정 파일 + summaries 전체 로딩
+   │  1화부터 순차 읽기 (10화 배치, 병렬 금지)
+   │  연속성(13항목) + 품질(4항목) + 한글교정(9항목) 동시 탐지
+   │  → summaries/full-audit-report.md (보고서)
+   │  → summaries/full-audit-tracker.md (누적 추적)
+   │
+2. 사용자가 보고서 확인
+   │
+3. /audit-fix 실행
+   │  보고서의 ❌/⚠️ 항목만 처리 (💡 참고는 무시)
+   │  수정 순서: 연속성 → 품질 → 한글교정 → 최종교정
+   │  → 본문 수정 + 요약 파일 갱신 + tracker에 이력 추가
+   │  → 보류 항목은 사용자에게 보고
+```
+
+**범위 감사 모드:**
+
+| 모드 | 조건 | 특징 |
+|------|------|------|
+| 정밀 | tracker에 이전 감사 데이터 존재 | 누적 데이터(캐릭터 상태, 복선 등) 활용 |
+| 부트스트랩 | tracker 없음 | summaries 기반 맥락 추정, 확인 불가 항목은 ⚠️ 처리 |
+
+---
+
+### 에이전트 11종
 
 | 에이전트 | 역할 | 호출 시점 |
 |----------|------|-----------|
@@ -353,6 +403,8 @@ F. 마무리
 | **summary-generator** | 요약 7종 파일 정밀 갱신 | writer 후처리 |
 | **summary-validator** | 요약↔원문 대조 검증 | 5화마다 정기 점검 |
 | **illustration-manager** | 삽화 검증, 일괄 감사, 재생성 | 삽화 삽입 후 |
+| **full-audit** | 전 에피소드 연속성+품질+한글 일괄 검증 (읽기 전용) | `/audit` |
+| **audit-fixer** | 감사 보고서 기반 자동 수정 (연속성→품질→한글 순) | `/audit-fix` |
 
 ### 파일 참조 우선순위
 
