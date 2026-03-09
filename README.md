@@ -21,7 +21,7 @@ AI(Claude Code)로 웹소설을 쓰기 위한 프로젝트 템플릿.
 
 ### 주요 기능
 
-- **11개 전문 에이전트**: 집필, 품질 검토, 연속성 검증, 한글 교정, 전수 감사, 감사 수정 등
+- **12개 전문 에이전트**: 집필, 품질 검토, 연속성 검증, 한글 교정, 전수 감사, 정밀 검증, 감사 수정 등
 - **연속성 자동 추적**: 캐릭터 상태, 관계, 정보 보유 현황, 약속/복선을 파일로 관리
 - **외부 AI 편집**: Gemini CLI / NIM Proxy / Ollama 다중 소스 검토 (Claude가 쓰고, 외부 AI가 편집)
 - **삽화 자동 생성**: NovelAI 연동, 캐릭터 외모 일관성 자동 보장
@@ -192,8 +192,9 @@ my-novel/
     ├── settings.local.example.json ← 권한 설정 예시 (복사하여 사용)
     ├── commands/              ← 스킬 커맨드 (슬래시 명령)
     │   ├── audit.md               /audit — 전수 감사
-    │   └── audit-fix.md           /audit-fix — 감사 수정
-    └── agents/                ← 전문 에이전트 11종
+    │   ├── audit-fix.md           /audit-fix — 감사 수정
+    │   └── audit-verify.md        /audit-verify — 정밀 검증
+    └── agents/                ← 전문 에이전트 12종
         ├── writer.md
         ├── reviewer.md
         ├── continuity-checker.md
@@ -204,7 +205,8 @@ my-novel/
         ├── summary-validator.md
         ├── illustration-manager.md
         ├── full-audit.md              전수 감사 에이전트
-        └── audit-fixer.md             감사 수정 에이전트
+        ├── audit-fixer.md             감사 수정 에이전트
+        └── audit-verifier.md          정밀 검증 에이전트
 ```
 
 ---
@@ -224,7 +226,7 @@ my-novel/
 ├── chapters/              ← 빈 아크 폴더
 ├── summaries/             ← 빈 추적 파일들
 ├── batch-supervisor.md    ← 배치 자동 집필 설정
-└── .claude/agents/        ← 11개 전문 에이전트
+└── .claude/agents/        ← 12개 전문 에이전트
 ```
 
 셋업만 수행한다. **에피소드 집필은 Phase 2에서 별도로 시작.**
@@ -357,7 +359,13 @@ F. 마무리
 
     ↓ 보고서 생성: summaries/full-audit-report.md
 
-/audit-fix          ← 보고서 기반 자동 수정
+/audit-verify          ← 크리티컬 항목 2차 정밀 검증 (선택)
+/audit-verify --all    ← 전체 ❌/⚠️ 검증
+/audit-verify --critical ← ❌ 연속성만 최소 검증
+
+    ↓ 검증 보고서: summaries/full-audit-verify.md
+
+/audit-fix          ← 보고서 기반 자동 수정 (verify 있으면 참조)
 /audit-fix 10-20    ← 범위 지정 수정
 /audit-fix --resume ← 중단된 수정 재개
 ```
@@ -365,20 +373,23 @@ F. 마무리
 **감사 파이프라인:**
 
 ```
-1. /audit 실행
+1. /audit 실행 (1차 감사 — 어떤 모델이든)
    │  설정 파일 + summaries 전체 로딩
    │  1화부터 순차 읽기 (10화 배치, 병렬 금지)
    │  연속성(13항목) + 품질(4항목) + 한글교정(9항목) 동시 탐지
    │  → summaries/full-audit-report.md (보고서)
    │  → summaries/full-audit-tracker.md (누적 추적)
    │
-2. 사용자가 보고서 확인
+2. /audit-verify 실행 (선택 — 1차와 다른 모델 권장)
+   │  크리티컬/불확실 항목만 선별 (EPISODE_META 제외)
+   │  6종 판정: 확인/상향/하향/수정확인/기각/미결
+   │  → summaries/full-audit-verify.md
    │
 3. /audit-fix 실행
-   │  보고서의 ❌/⚠️ 항목만 처리 (💡 참고는 무시)
+   │  verify 있으면 참조 (기각→스킵, 상향→우선, 수정확인→보정안 사용)
+   │  보고서의 ❌/⚠️ 항목 처리 (💡 참고는 무시)
    │  수정 순서: 연속성 → 품질 → 한글교정 → 최종교정
    │  → 본문 수정 + 요약 파일 갱신 + tracker에 이력 추가
-   │  → 보류 항목은 사용자에게 보고
 ```
 
 **범위 감사 모드:**
@@ -390,7 +401,7 @@ F. 마무리
 
 ---
 
-### 에이전트 11종
+### 에이전트 12종
 
 | 에이전트 | 역할 | 호출 시점 |
 |----------|------|-----------|
@@ -405,6 +416,7 @@ F. 마무리
 | **illustration-manager** | 삽화 검증, 일괄 감사, 재생성 | 삽화 삽입 후 |
 | **full-audit** | 전 에피소드 연속성+품질+한글 일괄 검증 (읽기 전용) | `/audit` |
 | **audit-fixer** | 감사 보고서 기반 자동 수정 (연속성→품질→한글 순) | `/audit-fix` |
+| **audit-verifier** | 크리티컬/불확실 항목 2차 정밀 검증 (오탐 제거) | `/audit-verify` |
 
 ### 파일 참조 우선순위
 
